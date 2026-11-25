@@ -1,0 +1,10 @@
+# Optional: MongoDB with Atlas Vector Search on your own machine.
+# It listens on port 27018, so it can run next to a regular MongoDB on 27017.
+# After `docker compose up -d`, set this in .env and run `npm run ingest`:
+#   MONGODB_URI=mongodb://127.0.0.1:27018/?directConnection=true
+# The data is rebuilt by `npm run ingest`, so no volume is kept.
+services:
+  mongo:
+    image: mongodb/mongodb-atlas-local:8.0
+    ports:
+      - '27018:27017'

@@ -1,0 +1,152 @@
+[
+  {
+    "id": "F01",
+    "type": "policy",
+    "title": {"en": "Delivery inside Dhaka", "bn": "ঢাকার ভেতরে ডেলিভারি"},
+    "body": {
+      "en": "Delivery inside Dhaka city costs Tk 70 and takes 1 to 2 working days. Orders above Tk 3,000 get free delivery inside Dhaka.",
+      "bn": "ঢাকা শহরের ভেতরে ডেলিভারি চার্জ ৭০ টাকা, সময় লাগে ১ থেকে ২ কর্মদিবস। ৩,০০০ টাকার বেশি অর্ডারে ঢাকার ভেতরে ডেলিভারি ফ্রি।"
+    },
+    "tags": ["delivery", "shipping", "dhaka"]
+  },
+  {
+    "id": "F02",
+    "type": "policy",
+    "title": {"en": "Delivery outside Dhaka", "bn": "ঢাকার বাইরে ডেলিভারি"},
+    "body": {
+      "en": "Delivery outside Dhaka, to any district in Bangladesh, costs Tk 130 and takes 3 to 5 working days by courier. Orders above Tk 5,000 get free delivery anywhere in the country.",
+      "bn": "ঢাকার বাইরে বাংলাদেশের যেকোনো জেলায় ডেলিভারি চার্জ ১৩০ টাকা, কুরিয়ারে সময় লাগে ৩ থেকে ৫ কর্মদিবস। ৫,০০০ টাকার বেশি অর্ডারে দেশের যেকোনো জায়গায় ডেলিভারি ফ্রি।"
+    },
+    "tags": ["delivery", "shipping", "courier"]
+  },
+  {
+    "id": "F03",
+    "type": "policy",
+    "title": {"en": "Cash on delivery", "bn": "ক্যাশ অন ডেলিভারি"},
+    "body": {
+      "en": "Cash on delivery is available across Bangladesh. Inside Dhaka you pay the full amount to the delivery person. Outside Dhaka, pay the Tk 130 delivery charge in advance by bKash or Nagad, and the rest on delivery.",
+      "bn": "সারা বাংলাদেশে ক্যাশ অন ডেলিভারি সুবিধা আছে। ঢাকার ভেতরে পুরো টাকা ডেলিভারির সময় দিলেই হবে। ঢাকার বাইরে ১৩০ টাকা ডেলিভারি চার্জ আগে বিকাশ বা নগদে পাঠাতে হবে, বাকি টাকা পণ্য হাতে পেয়ে দেবেন।"
+    },
+    "tags": ["payment", "cash on delivery", "cod"]
+  },
+  {
+    "id": "F04",
+    "type": "policy",
+    "title": {"en": "Payment methods", "bn": "পেমেন্ট পদ্ধতি"},
+    "body": {
+      "en": "We accept bKash, Nagad, Visa and Mastercard cards, and cash on delivery. Card and mobile payments are confirmed instantly.",
+      "bn": "আমরা বিকাশ, নগদ, ভিসা ও মাস্টারকার্ড এবং ক্যাশ অন ডেলিভারিতে পেমেন্ট নিই। কার্ড ও মোবাইল পেমেন্ট সাথে সাথে নিশ্চিত হয়।"
+    },
+    "tags": ["payment", "bkash", "nagad", "card"]
+  },
+  {
+    "id": "F05",
+    "type": "policy",
+    "title": {"en": "Returns and refunds", "bn": "রিটার্ন ও রিফান্ড"},
+    "body": {
+      "en": "You can return an item within 7 days of delivery if it is unused and still has its tags. Refunds reach your original payment method within 5 working days. Cash on delivery orders are refunded by bKash.",
+      "bn": "পণ্য হাতে পাওয়ার ৭ দিনের মধ্যে অব্যবহৃত ও ট্যাগসহ থাকলে ফেরত দিতে পারবেন। রিফান্ড ৫ কর্মদিবসের মধ্যে যে মাধ্যমে পেমেন্ট করেছিলেন সেখানে পৌঁছে যায়। ক্যাশ অন ডেলিভারি অর্ডারের রিফান্ড বিকাশে দেওয়া হয়।"
+    },
+    "tags": ["return", "refund"]
+  },
+  {
+    "id": "F06",
+    "type": "policy",
+    "title": {"en": "Size and colour exchange", "bn": "সাইজ ও রং এক্সচেঞ্জ"},
+    "body": {
+      "en": "You can exchange an item for another size or colour within 7 days. Exchange is free inside Dhaka. Outside Dhaka, you pay the Tk 130 delivery charge for the new item.",
+      "bn": "৭ দিনের মধ্যে অন্য সাইজ বা রঙের সাথে পণ্য বদলাতে পারবেন। ঢাকার ভেতরে এক্সচেঞ্জ ফ্রি। ঢাকার বাইরে নতুন পণ্যের জন্য ১৩০ টাকা ডেলিভারি চার্জ দিতে হবে।"
+    },
+    "tags": ["exchange", "size", "colour"]
+  },
+  {
+    "id": "F07",
+    "type": "policy",
+    "title": {"en": "Order tracking", "bn": "অর্ডার ট্র্যাকিং"},
+    "body": {
+      "en": "When your parcel leaves our warehouse, you get an SMS with your order number. Track it at nodi.example/track with the order number and your phone number.",
+      "bn": "পার্সেল আমাদের গুদাম থেকে রওনা হলে অর্ডার নম্বরসহ একটি এসএমএস পাবেন। nodi.example/track ঠিকানায় অর্ডার নম্বর ও ফোন নম্বর দিয়ে ট্র্যাক করতে পারবেন।"
+    },
+    "tags": ["tracking", "order", "sms"]
+  },
+  {
+    "id": "F08",
+    "type": "policy",
+    "title": {"en": "Cancelling an order", "bn": "অর্ডার বাতিল"},
+    "body": {
+      "en": "You can cancel free of charge before the parcel is dispatched. After dispatch, cancelling costs the delivery charge, and any advance payment above that is refunded.",
+      "bn": "পার্সেল পাঠানোর আগে বিনা খরচে অর্ডার বাতিল করা যায়। পাঠানোর পরে বাতিল করলে ডেলিভারি চার্জ কাটা হবে, এর বেশি অগ্রিম টাকা থাকলে ফেরত দেওয়া হবে।"
+    },
+    "tags": ["cancel", "order"]
+  },
+  {
+    "id": "F09",
+    "type": "policy",
+    "title": {"en": "Size guide", "bn": "সাইজ গাইড"},
+    "body": {
+      "en": "Panjabi sizes 38 to 46 match your chest measurement in inches. Kameez and kurti sizes: S fits a 34-inch bust, M 36, L 38, XL 40 and XXL 42.",
+      "bn": "পাঞ্জাবির সাইজ ৩৮ থেকে ৪৬, বুকের মাপের ইঞ্চির সাথে মিলিয়ে নিন। কামিজ ও কুর্তির সাইজ: S হলো ৩৪ ইঞ্চি বুক, M ৩৬, L ৩৮, XL ৪০ এবং XXL ৪২।"
+    },
+    "tags": ["size", "measurement"]
+  },
+  {
+    "id": "F10",
+    "type": "policy",
+    "title": {"en": "Damaged or wrong item", "bn": "ক্ষতিগ্রস্ত বা ভুল পণ্য"},
+    "body": {
+      "en": "If an item arrives damaged, or you receive the wrong item, tell us within 48 hours with photos. We replace it free of charge, delivery included.",
+      "bn": "পণ্য ক্ষতিগ্রস্ত অবস্থায় এলে বা ভুল পণ্য পেলে ৪৮ ঘণ্টার মধ্যে ছবিসহ আমাদের জানান। ডেলিভারিসহ বিনা খরচে বদলে দেওয়া হবে।"
+    },
+    "tags": ["damaged", "wrong item", "replacement"]
+  },
+  {
+    "id": "F11",
+    "type": "policy",
+    "title": {"en": "Showroom and opening hours", "bn": "শোরুম ও খোলার সময়"},
+    "body": {
+      "en": "Our showroom is on Road 27, Dhanmondi, Dhaka. It is open from 10 am to 9 pm every day, except Friday, when it opens from 3 pm to 9 pm.",
+      "bn": "আমাদের শোরুম ঢাকার ধানমন্ডি ২৭ নম্বর রোডে। প্রতিদিন সকাল ১০টা থেকে রাত ৯টা পর্যন্ত খোলা, শুধু শুক্রবার বিকেল ৩টা থেকে রাত ৯টা।"
+    },
+    "tags": ["showroom", "store", "hours", "location"]
+  },
+  {
+    "id": "F12",
+    "type": "policy",
+    "title": {"en": "Customer care", "bn": "গ্রাহকসেবা"},
+    "body": {
+      "en": "Chat with us on the website from 9 am to 11 pm, or email help@nodi.example. We reply to every email within 24 hours.",
+      "bn": "ওয়েবসাইটে সকাল ৯টা থেকে রাত ১১টা পর্যন্ত চ্যাট করুন, অথবা help@nodi.example ঠিকানায় ইমেইল করুন। প্রতিটি ইমেইলের উত্তর ২৪ ঘণ্টার মধ্যে দিই।"
+    },
+    "tags": ["contact", "support", "email"]
+  },
+  {
+    "id": "F13",
+    "type": "policy",
+    "title": {"en": "Gift wrapping", "bn": "উপহারের মোড়ক"},
+    "body": {
+      "en": "Gift wrapping costs Tk 50 per item and includes a handwritten card. Choose it at checkout.",
+      "bn": "প্রতিটি পণ্যের উপহারের মোড়ক ৫০ টাকা, সাথে হাতে লেখা কার্ড থাকে। চেকআউটের সময় বেছে নিন।"
+    },
+    "tags": ["gift", "wrapping"]
+  },
+  {
+    "id": "F14",
+    "type": "policy",
+    "title": {"en": "Bulk and corporate orders", "bn": "বাল্ক ও কর্পোরেট অর্ডার"},
+    "body": {
+      "en": "Orders of 10 or more pieces of the same product get a 10% discount. For corporate gifts, email corporate@nodi.example.",
+      "bn": "একই পণ্যের ১০ বা তার বেশি পিস অর্ডারে ১০% ছাড়। কর্পোরেট উপহারের জন্য corporate@nodi.example ঠিকানায় ইমেইল করুন।"
+    },
+    "tags": ["bulk", "corporate", "discount"]
+  },
+  {
+    "id": "F15",
+    "type": "policy",
+    "title": {"en": "Shipping abroad", "bn": "বিদেশে পাঠানো"},
+    "body": {
+      "en": "For now we deliver only within Bangladesh. We cannot ship to other countries.",
+      "bn": "আপাতত আমরা শুধু বাংলাদেশের ভেতরে ডেলিভারি দিই। অন্য দেশে পাঠানো সম্ভব নয়।"
+    },
+    "tags": ["international", "shipping", "abroad"]
+  }
+]

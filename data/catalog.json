@@ -1,0 +1,221 @@
+[
+  {
+    "id": "P01",
+    "type": "product",
+    "title": {"en": "Tangail cotton saree", "bn": "টাঙ্গাইল সুতি শাড়ি"},
+    "body": {
+      "en": "Handwoven on Tangail looms in soft cotton. 6 yards long with a matching blouse piece. Colours: red, green and navy blue. Hand wash in cold water.",
+      "bn": "টাঙ্গাইলের তাঁতে বোনা নরম সুতি শাড়ি। ৬ গজ লম্বা, সাথে ম্যাচিং ব্লাউজ পিস। রং: লাল, সবুজ ও নেভি ব্লু। ঠান্ডা পানিতে হাতে ধুতে হবে।"
+    },
+    "price": 1450,
+    "tags": ["saree", "cotton", "tangail", "handloom"]
+  },
+  {
+    "id": "P02",
+    "type": "product",
+    "title": {"en": "Dhakai Jamdani saree", "bn": "ঢাকাই জামদানি শাড়ি"},
+    "body": {
+      "en": "Half-silk Jamdani handwoven by weavers in Rupganj, Narayanganj. Each piece takes about three weeks to weave, so the motifs vary slightly. Comes in a gift box. Dry clean only.",
+      "bn": "নারায়ণগঞ্জের রূপগঞ্জের তাঁতিদের হাতে বোনা হাফ সিল্ক জামদানি। প্রতিটি শাড়ি বুনতে প্রায় তিন সপ্তাহ লাগে, তাই নকশায় সামান্য পার্থক্য থাকতে পারে। গিফট বক্সে দেওয়া হয়। শুধু ড্রাই ক্লিন করুন।"
+    },
+    "price": 8500,
+    "tags": ["saree", "jamdani", "silk", "gift"]
+  },
+  {
+    "id": "P03",
+    "type": "product",
+    "title": {"en": "Rajshahi silk saree", "bn": "রাজশাহী সিল্ক শাড়ি"},
+    "body": {
+      "en": "Pure mulberry silk from Rajshahi with a printed border. Lightweight and suitable for weddings and festivals. Colours: maroon, mustard and teal. Dry clean only.",
+      "bn": "রাজশাহীর খাঁটি মালবেরি সিল্ক, ছাপা পাড়সহ। হালকা ওজনের, বিয়ে ও উৎসবে পরার উপযোগী। রং: মেরুন, মাস্টার্ড ও টিল। শুধু ড্রাই ক্লিন করুন।"
+    },
+    "price": 5200,
+    "tags": ["saree", "silk", "rajshahi", "wedding"]
+  },
+  {
+    "id": "P04",
+    "type": "product",
+    "title": {"en": "Men's cotton panjabi", "bn": "ছেলেদের সুতি পাঞ্জাবি"},
+    "body": {
+      "en": "Everyday cotton panjabi with a mandarin collar. Sizes 38 to 46. Colours: white, off-white and sky blue. Machine wash on a gentle cycle.",
+      "bn": "প্রতিদিন পরার সুতি পাঞ্জাবি, ম্যান্ডারিন কলার। সাইজ ৩৮ থেকে ৪৬। রং: সাদা, অফ-হোয়াইট ও আকাশি। মেশিনে হালকা ওয়াশে ধোয়া যাবে।"
+    },
+    "price": 1250,
+    "tags": ["panjabi", "men", "cotton"]
+  },
+  {
+    "id": "P05",
+    "type": "product",
+    "title": {"en": "Men's silk panjabi, Eid collection", "bn": "ছেলেদের সিল্ক পাঞ্জাবি, ঈদ কালেকশন"},
+    "body": {
+      "en": "Soft silk-blend panjabi with hand embroidery on the placket, from our Eid collection. Sizes 38 to 46. Colours: cream, gold and black. Dry cleaning recommended.",
+      "bn": "ঈদ কালেকশনের নরম সিল্ক ব্লেন্ড পাঞ্জাবি, বোতামের পাশে হাতের কাজ। সাইজ ৩৮ থেকে ৪৬। রং: ক্রিম, সোনালি ও কালো। ড্রাই ক্লিন করা ভালো।"
+    },
+    "price": 3400,
+    "tags": ["panjabi", "men", "silk", "eid"]
+  },
+  {
+    "id": "P06",
+    "type": "product",
+    "title": {"en": "Women's lawn three-piece", "bn": "মেয়েদের লন থ্রি-পিস"},
+    "body": {
+      "en": "Stitched lawn three-piece: kameez, salwar and a chiffon orna. Sizes S to XXL. Printed in floral patterns. Machine wash in cold water.",
+      "bn": "সেলাই করা লন থ্রি-পিস: কামিজ, সালোয়ার ও শিফন ওড়না। সাইজ S থেকে XXL। ফুলের নকশায় প্রিন্ট করা। ঠান্ডা পানিতে মেশিনে ধোয়া যাবে।"
+    },
+    "price": 2100,
+    "tags": ["three-piece", "salwar kameez", "women", "lawn"]
+  },
+  {
+    "id": "P07",
+    "type": "product",
+    "title": {"en": "Printed cotton kurti", "bn": "প্রিন্টেড সুতি কুর্তি"},
+    "body": {
+      "en": "Short cotton kurti with block prints, good for office and daily wear. Sizes S to XL. Colours: indigo, rust and white.",
+      "bn": "ব্লক প্রিন্টের ছোট সুতি কুর্তি, অফিস ও প্রতিদিনের জন্য ভালো। সাইজ S থেকে XL। রং: ইন্ডিগো, মরিচা ও সাদা।"
+    },
+    "price": 890,
+    "tags": ["kurti", "women", "cotton"]
+  },
+  {
+    "id": "P08",
+    "type": "product",
+    "title": {"en": "Kids' panjabi", "bn": "বাচ্চাদের পাঞ্জাবি"},
+    "body": {
+      "en": "Cotton panjabi for boys aged 2 to 12, with a soft lining so it does not itch. Colours: white, light green and yellow.",
+      "bn": "২ থেকে ১২ বছর বয়সী ছেলেদের সুতি পাঞ্জাবি, নরম লাইনিং থাকায় চুলকায় না। রং: সাদা, হালকা সবুজ ও হলুদ।"
+    },
+    "price": 750,
+    "tags": ["panjabi", "kids", "cotton"]
+  },
+  {
+    "id": "P09",
+    "type": "product",
+    "title": {"en": "Checked cotton lungi", "bn": "চেক সুতি লুঙ্গি"},
+    "body": {
+      "en": "Classic checked lungi in thick cotton, already stitched. One size, 2.5 yards. Colours: blue check and green check.",
+      "bn": "মোটা সুতির ক্লাসিক চেক লুঙ্গি, সেলাই করা। ফ্রি সাইজ, আড়াই গজ। রং: নীল চেক ও সবুজ চেক।"
+    },
+    "price": 450,
+    "tags": ["lungi", "men", "cotton"]
+  },
+  {
+    "id": "P10",
+    "type": "product",
+    "title": {"en": "Handloom gamcha", "bn": "তাঁতের গামছা"},
+    "body": {
+      "en": "Traditional handloom gamcha towel that dries quickly. Size 60 by 30 inches. Sold as a single piece.",
+      "bn": "ঐতিহ্যবাহী তাঁতের গামছা, তাড়াতাড়ি শুকায়। মাপ ৬০ বাই ৩০ ইঞ্চি। একটি করে বিক্রি হয়।"
+    },
+    "price": 220,
+    "tags": ["gamcha", "towel", "handloom"]
+  },
+  {
+    "id": "P11",
+    "type": "product",
+    "title": {"en": "Nakshi kantha bedcover", "bn": "নকশি কাঁথা বেডকভার"},
+    "body": {
+      "en": "Hand-stitched nakshi kantha from Jamalpur, made by women artisans. Double bed size, 90 by 100 inches. Hand wash separately in cold water.",
+      "bn": "জামালপুরের নারী কারিগরদের হাতে সেলাই করা নকশি কাঁথা। ডাবল বেড সাইজ, ৯০ বাই ১০০ ইঞ্চি। ঠান্ডা পানিতে আলাদা করে হাতে ধুতে হবে।"
+    },
+    "price": 4800,
+    "tags": ["nakshi kantha", "bedcover", "home", "handmade"]
+  },
+  {
+    "id": "P12",
+    "type": "product",
+    "title": {"en": "Jute tote bag", "bn": "পাটের টোট ব্যাগ"},
+    "body": {
+      "en": "Strong jute tote bag with cotton handles and an inside pocket. Holds up to 10 kg.",
+      "bn": "সুতির হাতলসহ মজবুত পাটের টোট ব্যাগ, ভেতরে একটি পকেট আছে। ১০ কেজি পর্যন্ত ভার নিতে পারে।"
+    },
+    "price": 380,
+    "tags": ["bag", "jute", "accessories"]
+  },
+  {
+    "id": "P13",
+    "type": "product",
+    "title": {"en": "Men's leather sandals", "bn": "ছেলেদের চামড়ার স্যান্ডেল"},
+    "body": {
+      "en": "Cow leather sandals with a cushioned sole. Sizes 39 to 44. Colours: brown and black.",
+      "bn": "নরম সোলসহ গরুর চামড়ার স্যান্ডেল। সাইজ ৩৯ থেকে ৪৪। রং: বাদামি ও কালো।"
+    },
+    "price": 1650,
+    "tags": ["sandals", "shoes", "men", "leather"]
+  },
+  {
+    "id": "P14",
+    "type": "product",
+    "title": {"en": "Women's leather flats", "bn": "মেয়েদের চামড়ার ফ্ল্যাট জুতা"},
+    "body": {
+      "en": "Soft leather flats with a padded insole. Sizes 35 to 40. Colours: tan, black and maroon.",
+      "bn": "প্যাডেড ইনসোলসহ নরম চামড়ার ফ্ল্যাট জুতা। সাইজ ৩৫ থেকে ৪০। রং: ট্যান, কালো ও মেরুন।"
+    },
+    "price": 1350,
+    "tags": ["shoes", "flats", "women", "leather"]
+  },
+  {
+    "id": "P15",
+    "type": "product",
+    "title": {"en": "Cotton bedsheet set", "bn": "সুতি বেডশিট সেট"},
+    "body": {
+      "en": "King size cotton bedsheet with two pillow covers. Sheet size 108 by 108 inches. Colours: white, sky blue and beige.",
+      "bn": "কিং সাইজ সুতি বেডশিট, সাথে দুটি বালিশের কভার। চাদরের মাপ ১০৮ বাই ১০৮ ইঞ্চি। রং: সাদা, আকাশি ও বেইজ।"
+    },
+    "price": 1900,
+    "tags": ["bedsheet", "home", "cotton"]
+  },
+  {
+    "id": "P16",
+    "type": "product",
+    "title": {"en": "Silk orna", "bn": "সিল্কের ওড়না"},
+    "body": {
+      "en": "Light silk orna with tassels, 2.5 yards long. Pairs with a kameez or a kurti. Available in 8 colours.",
+      "bn": "ঝালরসহ হালকা সিল্কের ওড়না, আড়াই গজ লম্বা। কামিজ বা কুর্তির সাথে মানায়। ৮টি রঙে পাওয়া যায়।"
+    },
+    "price": 650,
+    "tags": ["orna", "scarf", "women", "silk"]
+  },
+  {
+    "id": "P17",
+    "type": "product",
+    "title": {"en": "Winter shawl", "bn": "শীতের শাল"},
+    "body": {
+      "en": "Warm wool-blend shawl with Kashmiri-style embroidery. 80 by 40 inches. Colours: grey, maroon and black. Dry clean only.",
+      "bn": "কাশ্মীরি ধাঁচের এমব্রয়ডারি করা উষ্ণ উল ব্লেন্ড শাল। মাপ ৮০ বাই ৪০ ইঞ্চি। রং: ধূসর, মেরুন ও কালো। শুধু ড্রাই ক্লিন করুন।"
+    },
+    "price": 2300,
+    "tags": ["shawl", "winter", "wool"]
+  },
+  {
+    "id": "P18",
+    "type": "product",
+    "title": {"en": "Georgette hijab", "bn": "জর্জেট হিজাব"},
+    "body": {
+      "en": "Breathable georgette hijab, 70 by 28 inches. Available in 6 colours: black, white, navy, beige, dusty pink and olive.",
+      "bn": "আরামদায়ক জর্জেট হিজাব, মাপ ৭০ বাই ২৮ ইঞ্চি। ৬টি রঙে পাওয়া যায়: কালো, সাদা, নেভি, বেইজ, ডাস্টি পিংক ও অলিভ।"
+    },
+    "price": 350,
+    "tags": ["hijab", "women", "georgette"]
+  },
+  {
+    "id": "P19",
+    "type": "product",
+    "title": {"en": "Men's cotton fatua", "bn": "ছেলেদের সুতি ফতুয়া"},
+    "body": {
+      "en": "Short cotton fatua with side pockets, cool for summer. Sizes M to XXL. Colours: white, olive and navy.",
+      "bn": "পাশে পকেটসহ ছোট সুতি ফতুয়া, গরমে আরামদায়ক। সাইজ M থেকে XXL। রং: সাদা, অলিভ ও নেভি।"
+    },
+    "price": 690,
+    "tags": ["fatua", "men", "cotton", "summer"]
+  },
+  {
+    "id": "P20",
+    "type": "product",
+    "title": {"en": "Nodi gift card", "bn": "নদী গিফট কার্ড"},
+    "body": {
+      "en": "Digital gift card worth Tk 1,000, Tk 2,000 or Tk 5,000. Sent by SMS and email, and valid for 12 months on any product.",
+      "bn": "১,০০০, ২,০০০ বা ৫,০০০ টাকার ডিজিটাল গিফট কার্ড। এসএমএস ও ইমেইলে পাঠানো হয়, যেকোনো পণ্যে ১২ মাস ব্যবহার করা যায়।"
+    },
+    "tags": ["gift card", "gift"]
+  }
+]

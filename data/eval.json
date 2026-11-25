@@ -1,0 +1,372 @@
+[
+  {
+    "id": "E01",
+    "lang": "en",
+    "question": "How much is delivery inside Dhaka?",
+    "answerable": true,
+    "expectDocs": ["F01"],
+    "expectFacts": [["70"]]
+  },
+  {
+    "id": "E02",
+    "lang": "en",
+    "question": "How long does delivery to Chittagong take?",
+    "answerable": true,
+    "expectDocs": ["F02"],
+    "expectFacts": [["3"], ["5"]]
+  },
+  {
+    "id": "E03",
+    "lang": "en",
+    "question": "Can I pay cash when the parcel arrives?",
+    "answerable": true,
+    "expectDocs": ["F03", "F04"]
+  },
+  {
+    "id": "E04",
+    "lang": "en",
+    "question": "What is the price of the Tangail cotton saree?",
+    "answerable": true,
+    "expectDocs": ["P01"],
+    "expectFacts": [["1450"]]
+  },
+  {
+    "id": "E05",
+    "lang": "en",
+    "question": "Do you have a silk panjabi for Eid?",
+    "answerable": true,
+    "expectDocs": ["P05"],
+    "expectFacts": [["3400"]]
+  },
+  {
+    "id": "E06",
+    "lang": "en",
+    "question": "What sizes does the men's cotton panjabi come in?",
+    "answerable": true,
+    "expectDocs": ["P04", "F09"],
+    "expectFacts": [["38"], ["46"]]
+  },
+  {
+    "id": "E07",
+    "lang": "en",
+    "question": "How many days do I have to return an item?",
+    "answerable": true,
+    "expectDocs": ["F05"],
+    "expectFacts": [["7"]]
+  },
+  {
+    "id": "E08",
+    "lang": "en",
+    "question": "Is exchange free if I live outside Dhaka?",
+    "answerable": true,
+    "expectDocs": ["F06"],
+    "expectFacts": [["130"]]
+  },
+  {
+    "id": "E09",
+    "lang": "en",
+    "question": "How can I track my order?",
+    "answerable": true,
+    "expectDocs": ["F07"],
+    "expectFacts": [["nodi.example/track", "sms", "order number"]]
+  },
+  {
+    "id": "E10",
+    "lang": "en",
+    "question": "When does the showroom open on Friday?",
+    "answerable": true,
+    "expectDocs": ["F11"],
+    "expectFacts": [["3"]]
+  },
+  {
+    "id": "E11",
+    "lang": "en",
+    "question": "How much does gift wrapping cost?",
+    "answerable": true,
+    "expectDocs": ["F13"],
+    "expectFacts": [["50"]]
+  },
+  {
+    "id": "E12",
+    "lang": "en",
+    "question": "Do you ship to the UK?",
+    "answerable": true,
+    "expectDocs": ["F15"],
+    "expectFacts": [["bangladesh"]]
+  },
+  {
+    "id": "E13",
+    "lang": "en",
+    "question": "My parcel arrived damaged. What should I do?",
+    "answerable": true,
+    "expectDocs": ["F10"],
+    "expectFacts": [["48"]]
+  },
+  {
+    "id": "E14",
+    "lang": "en",
+    "question": "How big is the nakshi kantha bedcover?",
+    "answerable": true,
+    "expectDocs": ["P11"],
+    "expectFacts": [["90"], ["100"]]
+  },
+  {
+    "id": "E15",
+    "lang": "en",
+    "question": "Do you give a discount on bulk orders?",
+    "answerable": true,
+    "expectDocs": ["F14"],
+    "expectFacts": [["10"]]
+  },
+  {"id": "E16", "lang": "en", "question": "Do you sell iPhone chargers?", "answerable": false},
+  {"id": "E17", "lang": "en", "question": "Who is the owner of your company?", "answerable": false},
+
+  {
+    "id": "B01",
+    "lang": "bn",
+    "question": "ঢাকার বাইরে ডেলিভারি চার্জ কত?",
+    "answerable": true,
+    "expectDocs": ["F02"],
+    "expectFacts": [["130"]]
+  },
+  {
+    "id": "B02",
+    "lang": "bn",
+    "question": "জামদানি শাড়ির দাম কত?",
+    "answerable": true,
+    "expectDocs": ["P02"],
+    "expectFacts": [["8500"]]
+  },
+  {
+    "id": "B03",
+    "lang": "bn",
+    "question": "বিকাশে পেমেন্ট করা যাবে?",
+    "answerable": true,
+    "expectDocs": ["F04", "F03"],
+    "expectFacts": [["বিকাশ", "bkash"]]
+  },
+  {
+    "id": "B04",
+    "lang": "bn",
+    "question": "অর্ডার বাতিল করলে কি টাকা কাটবে?",
+    "answerable": true,
+    "expectDocs": ["F08"]
+  },
+  {
+    "id": "B05",
+    "lang": "bn",
+    "question": "রিফান্ড পেতে কত দিন লাগে?",
+    "answerable": true,
+    "expectDocs": ["F05"],
+    "expectFacts": [["5"]]
+  },
+  {
+    "id": "B06",
+    "lang": "bn",
+    "question": "বাচ্চাদের পাঞ্জাবি কত বছর বয়সের জন্য?",
+    "answerable": true,
+    "expectDocs": ["P08"],
+    "expectFacts": [["2"], ["12"]]
+  },
+  {
+    "id": "B07",
+    "lang": "bn",
+    "question": "থ্রি-পিস কোন কোন সাইজে পাওয়া যায়?",
+    "answerable": true,
+    "expectDocs": ["P06", "F09"],
+    "expectFacts": [["xxl"]]
+  },
+  {
+    "id": "B08",
+    "lang": "bn",
+    "question": "আপনাদের শোরুম কোথায়?",
+    "answerable": true,
+    "expectDocs": ["F11"],
+    "expectFacts": [["ধানমন্ডি", "dhanmondi"]]
+  },
+  {
+    "id": "B09",
+    "lang": "bn",
+    "question": "কত টাকার বেশি কিনলে ঢাকায় ডেলিভারি ফ্রি?",
+    "answerable": true,
+    "expectDocs": ["F01"],
+    "expectFacts": [["3000"]]
+  },
+  {
+    "id": "B10",
+    "lang": "bn",
+    "question": "লুঙ্গির দাম কত?",
+    "answerable": true,
+    "expectDocs": ["P09"],
+    "expectFacts": [["450"]]
+  },
+  {
+    "id": "B11",
+    "lang": "bn",
+    "question": "গিফট কার্ড কত দিন ব্যবহার করা যাবে?",
+    "answerable": true,
+    "expectDocs": ["P20"],
+    "expectFacts": [["12"]]
+  },
+  {
+    "id": "B12",
+    "lang": "bn",
+    "question": "ভুল পণ্য পেলে কী করব?",
+    "answerable": true,
+    "expectDocs": ["F10"],
+    "expectFacts": [["48"]]
+  },
+  {
+    "id": "B13",
+    "lang": "bn",
+    "question": "গ্রাহকসেবার ইমেইল ঠিকানা কী?",
+    "answerable": true,
+    "expectDocs": ["F12"],
+    "expectFacts": [["help@nodi.example"]]
+  },
+  {
+    "id": "B14",
+    "lang": "bn",
+    "question": "শীতের শাল আছে? দাম কত?",
+    "answerable": true,
+    "expectDocs": ["P17"],
+    "expectFacts": [["2300"]]
+  },
+  {
+    "id": "B15",
+    "lang": "bn",
+    "question": "পাটের ব্যাগের দাম কত?",
+    "answerable": true,
+    "expectDocs": ["P12"],
+    "expectFacts": [["380"]]
+  },
+  {"id": "B16", "lang": "bn", "question": "আপনারা কি ল্যাপটপ বিক্রি করেন?", "answerable": false},
+  {"id": "B17", "lang": "bn", "question": "কাল সিলেটে আবহাওয়া কেমন থাকবে?", "answerable": false},
+
+  {
+    "id": "N01",
+    "lang": "banglish",
+    "question": "dhakar moddhe delivery charge koto?",
+    "answerable": true,
+    "expectDocs": ["F01"],
+    "expectFacts": [["70"]]
+  },
+  {
+    "id": "N02",
+    "lang": "banglish",
+    "question": "cash on delivery ache? ami khulnay thaki",
+    "answerable": true,
+    "expectDocs": ["F03"],
+    "expectFacts": [["130"]]
+  },
+  {
+    "id": "N03",
+    "lang": "banglish",
+    "question": "tangail sharee er dam koto?",
+    "answerable": true,
+    "expectDocs": ["P01"],
+    "expectFacts": [["1450"]]
+  },
+  {
+    "id": "N04",
+    "lang": "banglish",
+    "question": "eid er jonno silk panjabi ache?",
+    "answerable": true,
+    "expectDocs": ["P05"],
+    "expectFacts": [["3400"]]
+  },
+  {
+    "id": "N05",
+    "lang": "banglish",
+    "question": "product ferot dite chai, koto din er moddhe dite hobe?",
+    "answerable": true,
+    "expectDocs": ["F05"],
+    "expectFacts": [["7"]]
+  },
+  {
+    "id": "N06",
+    "lang": "banglish",
+    "question": "size bodlate chai, charge lagbe?",
+    "answerable": true,
+    "expectDocs": ["F06"]
+  },
+  {
+    "id": "N07",
+    "lang": "banglish",
+    "question": "amar order kothay ache kivabe bujhbo?",
+    "answerable": true,
+    "expectDocs": ["F07"],
+    "expectFacts": [["nodi.example/track", "sms"]]
+  },
+  {
+    "id": "N08",
+    "lang": "banglish",
+    "question": "kurti er dam koto?",
+    "answerable": true,
+    "expectDocs": ["P07"],
+    "expectFacts": [["890"]]
+  },
+  {
+    "id": "N09",
+    "lang": "banglish",
+    "question": "nakshi kantha ache?",
+    "answerable": true,
+    "expectDocs": ["P11"],
+    "expectFacts": [["4800"]]
+  },
+  {
+    "id": "N10",
+    "lang": "banglish",
+    "question": "bkash e payment kora jabe?",
+    "answerable": true,
+    "expectDocs": ["F04", "F03"],
+    "expectFacts": [["bkash", "bikash", "বিকাশ"]]
+  },
+  {
+    "id": "N11",
+    "lang": "banglish",
+    "question": "shukrobar showroom kokhon khole?",
+    "answerable": true,
+    "expectDocs": ["F11"],
+    "expectFacts": [["3"]]
+  },
+  {
+    "id": "N12",
+    "lang": "banglish",
+    "question": "gamchar dam koto?",
+    "answerable": true,
+    "expectDocs": ["P10"],
+    "expectFacts": [["220"]]
+  },
+  {
+    "id": "N13",
+    "lang": "banglish",
+    "question": "hijab koyta rong e ache?",
+    "answerable": true,
+    "expectDocs": ["P18"],
+    "expectFacts": [["6"]]
+  },
+  {
+    "id": "N14",
+    "lang": "banglish",
+    "question": "chamrar sandal ache? size koto porjonto?",
+    "answerable": true,
+    "expectDocs": ["P13"],
+    "expectFacts": [["44"]]
+  },
+  {
+    "id": "N15",
+    "lang": "banglish",
+    "question": "10 ta panjabi kinle discount pabo?",
+    "answerable": true,
+    "expectDocs": ["F14"],
+    "expectFacts": [["10"]]
+  },
+  {
+    "id": "N16",
+    "lang": "banglish",
+    "question": "apnara ki mobile phone repair koren?",
+    "answerable": false
+  },
+  {"id": "N17", "lang": "banglish", "question": "apnader company r malik ke?", "answerable": false}
+]
