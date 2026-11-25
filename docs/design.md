@@ -52,6 +52,7 @@ Every stage is timed, and the timings travel with the response.
 - A paid OpenRouter model without credits: the error says to add credits or choose a `:free` model.
 - A free model that refuses JSON schemas: the rewrite asks again without one and parses the answer loosely.
 - Embedding model changed since ingest: startup refuses with a clear message, because vectors of different models cannot be compared.
+- A `mongodb+srv` lookup that fails with `querySrv ECONNREFUSED`: some Windows setups give Node's resolver a DNS server that refuses, while the system resolver works. `DNS_SERVERS` points Node at servers that answer.
 - Rewrite fails or returns bad JSON: the pipeline continues with the original question.
 - Client disconnects: the request's abort signal stops generation.
 

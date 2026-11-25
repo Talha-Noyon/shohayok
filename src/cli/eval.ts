@@ -2,7 +2,7 @@ import {mkdir, readFile, writeFile} from 'node:fs/promises'
 import {cpus} from 'node:os'
 import {parseArgs} from 'node:util'
 
-import {loadConfig, loadEnvFile} from '../config.js'
+import {setup} from '../config.js'
 import {loadEvalSet} from '../corpus/schema.js'
 import {factsFound, firstRelevantRank} from '../eval/metrics.js'
 import {renderMarkdown, replaceResultsSection, summarize, type ItemResult} from '../eval/report.js'
@@ -25,8 +25,7 @@ await runCli(async () => {
       hardware: {type: 'string', default: cpus()[0]?.model.trim() ?? 'unknown hardware'}
     }
   })
-  loadEnvFile()
-  const config = loadConfig()
+  const config = setup()
   const retrievalOnly = values['retrieval-only']
   const items = (await loadEvalSet()).slice(0, values.limit ? Number(values.limit) : undefined)
   const services = await createServices(config)

@@ -1,4 +1,4 @@
-import {loadConfig, loadEnvFile} from '../config.js'
+import {setup} from '../config.js'
 import {OpenRouterClient} from '../llm/openrouter.js'
 import {createProviders, hasModel, PROVIDER_LABEL} from '../llm/providers.js'
 import {supportsVectorSearch} from '../retrieval/atlasIndex.js'
@@ -7,8 +7,7 @@ import {runCli} from './run.js'
 
 /** Checks every dependency and says exactly what to fix */
 await runCli(async () => {
-  loadEnvFile()
-  const config = loadConfig()
+  const config = setup()
   let failures = 0
   const ok = (message: string) => console.log(`  ok    ${message}`)
   const note = (message: string) => console.log(`  note  ${message}`)

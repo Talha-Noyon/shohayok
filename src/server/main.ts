@@ -1,13 +1,12 @@
 import {runCli} from '../cli/run.js'
-import {loadConfig, loadEnvFile} from '../config.js'
+import {setup} from '../config.js'
 import {PROVIDER_LABEL} from '../llm/providers.js'
 import {answerQuestion} from '../rag/pipeline.js'
 import {createServices} from '../services.js'
 import {createApp} from './app.js'
 
 await runCli(async () => {
-  loadEnvFile()
-  const config = loadConfig()
+  const config = setup()
   const services = await createServices(config)
   const health = await services.health()
   if (health.chunks === 0) {
