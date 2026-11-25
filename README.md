@@ -118,22 +118,23 @@ Every Banglish question is also retrieved without the rewrite step, so the repor
 
 Set in `.env`. Empty values use the default.
 
-| Variable             | Default                                                            | Purpose                                                              |
-| -------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| `LLM_PROVIDER`       | `ollama`                                                           | Where answers and the Banglish rewrite run: `ollama` or `openrouter` |
-| `EMBED_PROVIDER`     | `LLM_PROVIDER`                                                     | Where embeddings run                                                 |
-| `OLLAMA_URL`         | `http://127.0.0.1:11434`                                           | Ollama server                                                        |
-| `OPENROUTER_API_KEY` | none                                                               | Needed when either provider is `openrouter`                          |
-| `OPENROUTER_URL`     | `https://openrouter.ai/api/v1`                                     | OpenRouter API                                                       |
-| `EMBED_MODEL`        | `bge-m3` on Ollama, `baai/bge-m3` on OpenRouter                    | Embedding model                                                      |
-| `CHAT_MODEL`         | `gemma3:12b` on Ollama, `google/gemma-4-31b-it:free` on OpenRouter | Answer model                                                         |
-| `REWRITE_MODEL`      | `CHAT_MODEL`                                                       | Model for the Banglish rewrite                                       |
-| `MONGODB_URI`        | `mongodb://127.0.0.1:27017`                                        | MongoDB connection string                                            |
-| `MONGODB_DB`         | `shohayok`                                                         | Database name                                                        |
-| `VECTOR_BACKEND`     | `auto`                                                             | `atlas`, `local`, or `auto` to detect                                |
-| `HANDOFF_THRESHOLD`  | `0.5`                                                              | Hand off below this cosine similarity                                |
-| `TOP_K`              | `4`                                                                | Chunks given to the answer model                                     |
-| `PORT`               | `3000`                                                             | HTTP port                                                            |
+| Variable             | Default                                                            | Purpose                                                                                                              |
+| -------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `LLM_PROVIDER`       | `ollama`                                                           | Where answers and the Banglish rewrite run: `ollama` or `openrouter`                                                 |
+| `EMBED_PROVIDER`     | `LLM_PROVIDER`                                                     | Where embeddings run                                                                                                 |
+| `OLLAMA_URL`         | `http://127.0.0.1:11434`                                           | Ollama server                                                                                                        |
+| `OPENROUTER_API_KEY` | none                                                               | Needed when either provider is `openrouter`                                                                          |
+| `OPENROUTER_URL`     | `https://openrouter.ai/api/v1`                                     | OpenRouter API                                                                                                       |
+| `EMBED_MODEL`        | `bge-m3` on Ollama, `baai/bge-m3` on OpenRouter                    | Embedding model                                                                                                      |
+| `CHAT_MODEL`         | `gemma3:12b` on Ollama, `google/gemma-4-31b-it:free` on OpenRouter | Answer model                                                                                                         |
+| `REWRITE_MODEL`      | `CHAT_MODEL`                                                       | Model for the Banglish rewrite                                                                                       |
+| `MONGODB_URI`        | `mongodb://127.0.0.1:27017`                                        | MongoDB connection string                                                                                            |
+| `MONGODB_DB`         | `shohayok`                                                         | Database name                                                                                                        |
+| `DNS_SERVERS`        | the system's                                                       | DNS servers for Node, such as `8.8.8.8,1.1.1.1`. Set it if a `mongodb+srv` string fails with `querySrv ECONNREFUSED` |
+| `VECTOR_BACKEND`     | `auto`                                                             | `atlas`, `local`, or `auto` to detect                                                                                |
+| `HANDOFF_THRESHOLD`  | `0.5`                                                              | Hand off below this cosine similarity                                                                                |
+| `TOP_K`              | `4`                                                                | Chunks given to the answer model                                                                                     |
+| `PORT`               | `3000`                                                             | HTTP port                                                                                                            |
 
 ## API
 

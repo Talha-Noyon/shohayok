@@ -1,6 +1,6 @@
 import {parseArgs} from 'node:util'
 
-import {loadConfig, loadEnvFile} from '../config.js'
+import {setup} from '../config.js'
 import {loadDocs} from '../corpus/schema.js'
 import {toChunks} from '../ingest/chunk.js'
 import {OllamaClient} from '../llm/ollama.js'
@@ -15,8 +15,7 @@ const BATCH = 16
 /** Chunks the catalogue and policies, embeds them, and stores them in MongoDB */
 await runCli(async () => {
   const {values} = parseArgs({options: {pull: {type: 'boolean', default: false}}})
-  loadEnvFile()
-  const config = loadConfig()
+  const config = setup()
 
   const docs = await loadDocs()
   const chunks = docs.flatMap((doc) => toChunks(doc))

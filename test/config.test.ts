@@ -8,6 +8,7 @@ describe('loadConfig', () => {
     expect(loadConfig({})).toEqual({
       mongoUri: 'mongodb://127.0.0.1:27017',
       mongoDb: 'shohayok',
+      dnsServers: [],
       chatProvider: 'ollama',
       embedProvider: 'ollama',
       ollamaUrl: 'http://127.0.0.1:11434',
@@ -58,6 +59,17 @@ describe('loadConfig', () => {
     const config = loadConfig({REWRITE_MODEL: '', CHAT_MODEL: 'qwen3:8b', TOP_K: '6'})
     expect(config.rewriteModel).toBe('qwen3:8b')
     expect(config.topK).toBe(6)
+  })
+
+  it('reads a list of DNS servers and rejects anything that is not an IP address', () => {
+    expect(loadConfig({DNS_SERVERS: ' 8.8.8.8, 1.1.1.1 ,'}).dnsServers).toEqual([
+      '8.8.8.8',
+      '1.1.1.1'
+    ])
+    expect(loadConfig({DNS_SERVERS: '2001:4860:4860::8888'}).dnsServers).toEqual([
+      '2001:4860:4860::8888'
+    ])
+    expect(() => loadConfig({DNS_SERVERS: 'dns.google'})).toThrow('not an IP address')
   })
 
   it('rejects an unknown provider or vector backend', () => {

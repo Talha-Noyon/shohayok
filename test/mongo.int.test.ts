@@ -147,6 +147,7 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
         services = await createServices({
           mongoUri: MONGO_URI,
           mongoDb: DB,
+          dnsServers: [],
           chatProvider: name,
           embedProvider: name,
           ollamaUrl: 'http://127.0.0.1:9',
