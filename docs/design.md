@@ -39,11 +39,11 @@ A shared daily counter in MongoDB stops public use a few requests short of the l
 ## How a turn works
 
 1. **Guard.** Rate limits per visitor, the 500-character cap and the daily budget.
-2. **Detect** the language from the share of Bengali script, then a list of common Banglish words.
+2. **Detect** the language from the share of Bengali script, then a list of common Banglish words. Shop words such as product names, "size" and "delivery" count for neither language, and a message of a word or two, such as a place or an order number, keeps the conversation's language.
 3. **Read** the message with rules: order numbers, phone numbers, districts and Dhaka areas, sizes, colours, categories, price limits, and intents such as "where is my order" or "talk to a person", in all three scripts and with Bengali digits.
 4. **Route.** Structured questions go to a tool. Everything else is an open question.
 5. **Tools** answer from MongoDB with fixed replies in the customer's language: `order_status`, `delivery_fee`, `check_stock`, `list_products` and `request_callback`. When a detail is missing, the reply asks for it.
-6. **Open questions** are searched as written. If a Banglish question or a follow-up cannot be resolved that way, the model rewrites it into a standalone question in Bengali and English, using the conversation, and the rules and the search run again on the rewrite.
+6. **Open questions** are searched as written. If a Banglish question or a follow-up cannot be resolved that way, the model rewrites it into a standalone question in Bengali and English, using the conversation, and the rules and the search run again on the rewrite. A rewrite of a first message may not route to a product: with no conversation before it, a product it names is the model's invention.
 7. **Answer** from the top documents, streamed and cited. Below the confidence threshold, the bot offers a callback instead.
 8. **Save** the message with its trace: what was detected, the route, the search hits and scores, the tool call, the model requests used and the timings.
 
@@ -102,5 +102,6 @@ Stock and orders are never embedded. They change, so tools read them at answer t
 - Unit tests for every model-free module: detection, the rules, routing, tools, templates, limits, prompts, fusion, metrics and the report.
 - Both model clients are tested against fake HTTP servers.
 - MongoDB integration tests drive whole conversations through the HTTP API with a stand-in model server.
-- `npm run eval` scores about 100 labelled cases: three languages, follow-ups, tools, filters, callbacks and prompt injections. It saves progress after each case, so a run can stop at the daily limit and resume the next day.
-- `npm run eval -- --offline` scores everything that needs no model, and runs in CI on every pull request.
+- `npm run eval` scores 107 labelled cases: three languages, follow-ups, tools, filters, callbacks and prompt injections. Open questions are embedded ahead, 50 to a request. It saves progress after each case, so a run can stop at the daily limit and resume the next day.
+- `npm run eval -- --offline` scores everything that needs no model, by setting the day's budget to zero, and runs in CI on every pull request. It fails on any leak.
+- A re-ingest embeds only chunks whose text or model changed.
