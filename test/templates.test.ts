@@ -124,6 +124,16 @@ describe('renderReply', () => {
     }
   })
 
+  it('describes a product with its fabric and care, from the data', () => {
+    const p001 = {...product, fabric: {en: 'fine cotton', bn: 'মিহি সুতি'}}
+    const care = {en: 'Dry clean only.', bn: 'শুধু ড্রাই ক্লিন করুন।'}
+    const card = (lang: Lang) =>
+      renderReply({tool: 'product_info', product: {...p001, care}}, lang).text
+    expect(card('en')).toContain('Fine cotton. Dry clean only.')
+    expect(card('bn')).toContain('মিহি সুতি। শুধু ড্রাই ক্লিন করুন।')
+    expect(card('banglish')).toContain('Kapor: fine cotton. Care: Dry clean only.')
+  })
+
   it('masks the phone number when it confirms a callback', () => {
     const reply = renderReply(
       {tool: 'request_callback', outcome: 'saved', ticket: 'CB-ABC234', phone: '01000000009'},

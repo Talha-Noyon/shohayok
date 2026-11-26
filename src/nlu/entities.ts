@@ -113,7 +113,27 @@ const ORDINALS: Term[] = [
   phrases('5', ['fifth', '5th', 'ponchom', 'পঞ্চম']),
   phrases('-1', ['last', 'shesh', 'শেষ', 'শেষের'])
 ]
-const ORDINAL_NUMBER = word('(\\d)\\s(?:no|number|nombor|নম্বর)')
+const NUMBER_WORDS: Record<string, number> = {
+  ek: 1,
+  এক: 1,
+  dui: 2,
+  দুই: 2,
+  tin: 3,
+  তিন: 3,
+  char: 4,
+  চার: 4,
+  pach: 5,
+  panch: 5,
+  পাঁচ: 5
+}
+/** "2 no", "tin number ta", "তিন নম্বরটা" */
+const ORDINAL_NUMBER = word(
+  `(\\d|${Object.keys(NUMBER_WORDS).join('|')})\\s(?:no|number|nombor|নম্বর|নং)(?:টা|টার|টি|টির|ta|tar|ti|er|ের)?`
+)
+const ordinalOf = (value: string) => NUMBER_WORDS[value] ?? Number(value)
+
+/** The size label itself: "2-3Y" reads as "2 3y" once normalized */
+const AGE_LABEL = word('(\\d{1,2})\\s(\\d{1,2})\\s?y')
 
 function readSizes(text: string): string[] {
   const sizes = new Set<string>()
@@ -121,6 +141,9 @@ function readSizes(text: string): string[] {
     const value = pattern.exec(text)?.[1]
     if (value) sizes.add(value === '2xl' ? 'XXL' : value.toUpperCase())
   }
+  const label = AGE_LABEL.exec(text)
+  const labelled = label && AGE_SIZES.find((size) => size === `${label[1]}-${label[2]}Y`)
+  if (labelled) return [...sizes, labelled]
   const age = AGE.exec(text)?.[1]
   if (age) {
     const years = Number(age)
@@ -195,7 +218,8 @@ export function extractEntities(text: string): Entities {
   entities.sizes = readSizes(normal)
   Object.assign(entities, readPrices(normal))
 
-  const ordinal = matchTerms(tokens, ORDINALS)[0]?.key ?? ORDINAL_NUMBER.exec(normal)?.[1]
+  const spoken = ORDINAL_NUMBER.exec(normal)?.[1]
+  const ordinal = matchTerms(tokens, ORDINALS)[0]?.key ?? (spoken && ordinalOf(spoken))
   if (ordinal !== undefined) entities.ordinal = Number(ordinal)
   entities.reference = entities.ordinal !== undefined || matchTerms(tokens, REFERENCES).length > 0
   return entities

@@ -1,5 +1,5 @@
 import {cachedEmbedder, cacheKey, type Cache} from '../cache/cache.js'
-import {detectLanguage, explainLanguage, hasLetters, type Lang} from '../lang/detect.js'
+import {detectLanguage, explainLanguage, saysLittle, type Lang} from '../lang/detect.js'
 import type {Budget} from '../limits/budget.js'
 import {budgeted, QuotaExhaustedError, type RequestKind} from '../llm/budgeted.js'
 import type {ChatInfo, LlmProvider} from '../llm/types.js'
@@ -154,7 +154,8 @@ export async function* runTurn(input: TurnInput, deps: AgentDeps): AsyncGenerato
   const history: HistoryTurn[] = conversation.messages.map(({role, text}) => ({role, text}))
 
   const evidence = explainLanguage(message)
-  const lang: Lang = hasLetters(message) ? evidence.lang : (state.lang ?? 'en')
+  // "Rajshahi" or a phone number says nothing new: the conversation's language stands
+  const lang: Lang = saysLittle(message) && state.lang ? state.lang : evidence.lang
   const entities = extractEntities(message)
   const intents = detectIntents(message, entities)
   const decided = route(message, entities, intents, state)

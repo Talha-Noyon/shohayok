@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import {detectLanguage, explainLanguage, hasLetters} from '../src/lang/detect.js'
+import {detectLanguage, explainLanguage, hasLetters, saysLittle} from '../src/lang/detect.js'
 
 describe('detectLanguage', () => {
   it.each(['ঢাকার বাইরে ডেলিভারি চার্জ কত?', 'জামদানি শাড়ির দাম কত?', 'delivery চার্জ কত?'])(
@@ -54,4 +54,37 @@ describe('explainLanguage', () => {
     expect(hasLetters('01012345678')).toBe(false)
     expect(hasLetters('NDI-10024')).toBe(true)
   })
+})
+
+describe('shop words', () => {
+  it.each([
+    ['Ketoki cotton panjabi 42 size ache?', 'banglish'],
+    ['jamdani sharee dekhao', 'banglish'],
+    ['product return korte parbo?', 'banglish'],
+    ['cash on delivery ache?', 'banglish'],
+    ['bidesh e pathano jay?', 'banglish'],
+    ['kinar por size bodlano jabe?', 'banglish'],
+    ['Any lungi under 400 taka?', 'en'],
+    ['Show me red sharees under 3000 taka', 'en'],
+    ['Is cash on delivery available outside Dhaka?', 'en'],
+    ['Ketoki Jamdani Sharee price?', 'en']
+  ])('count for neither language: %s is %s', (text, lang) => {
+    expect(detectLanguage(text)).toBe(lang)
+  })
+})
+
+describe('saysLittle', () => {
+  it.each(['Rajshahi', 'NDI-10298, phone 01000000001', '01000000002', 'XL'])(
+    'finds too few words to tell the language in %s',
+    (text) => {
+      expect(saysLittle(text)).toBe(true)
+    }
+  )
+
+  it.each(['And to Uttara?', 'ধন্যবাদ', 'Hi there', 'koto?'.repeat(1) + ' bhai'])(
+    'finds enough in %s',
+    (text) => {
+      expect(saysLittle(text)).toBe(false)
+    }
+  )
 })

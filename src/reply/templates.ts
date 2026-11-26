@@ -410,10 +410,12 @@ function productText(product: Product, lang: Lang): string {
     lang
   )
   const sizes = product.sizes.map((size) => sizeLabel(size, lang)).join(', ')
+  const fabric = product.fabric.en.charAt(0).toUpperCase() + product.fabric.en.slice(1)
+  // Banglish has no text of its own in the data: the English care line reads naturally there
   return pick(lang, {
-    en: `${name} costs ${price}. Colours: ${colors}. Sizes: ${sizes}. [${product.id}]`,
-    bn: `${name}-এর দাম ${price}। রং: ${colors}। সাইজ: ${sizes}। [${product.id}]`,
-    banglish: `${name} er dam ${price}. Rong: ${colors}. Size: ${sizes}. [${product.id}]`
+    en: `${name} costs ${price}. ${fabric}. ${product.care.en} Colours: ${colors}. Sizes: ${sizes}. [${product.id}]`,
+    bn: `${name}-এর দাম ${price}। ${product.fabric.bn}। ${product.care.bn} রং: ${colors}। সাইজ: ${sizes}। [${product.id}]`,
+    banglish: `${name} er dam ${price}. Kapor: ${product.fabric.en}. Care: ${product.care.en} Rong: ${colors}. Size: ${sizes}. [${product.id}]`
   })
 }
 

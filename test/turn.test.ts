@@ -127,6 +127,18 @@ describe('runTurn', () => {
     expect(saved?.state).toMatchObject({lastTool: 'delivery_fee', lang: 'banglish'})
   })
 
+  it('keeps the conversation language for a message of a word or two', async () => {
+    const {talk} = setup()
+    const first = await talk('delivery charge koto bhai?')
+    const place = await talk('Rajshahi', first.id)
+    expect(place.meta.lang).toBe('banglish')
+    expect(place.text).toContain('Rajshahi e delivery charge 130 taka')
+    const order = await talk('amar order kothay?')
+    const ids = await talk('NDI-10298, phone 01000000001', order.id)
+    expect(ids.meta.lang).toBe('banglish')
+    expect((await talk('Rajshahi')).meta.lang).toBe('en')
+  })
+
   it('answers an open question with one embedding and one answer, from the found documents', async () => {
     const {talk, prompts} = setup({
       vector: () => [hitOf('F05', 0.6)],

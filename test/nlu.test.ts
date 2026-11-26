@@ -69,7 +69,12 @@ describe('extractEntities', () => {
     ['2nd tar dam koto?', {reference: true, ordinal: 2}],
     ['দ্বিতীয়টার দাম কত?', {reference: true, ordinal: 2}],
     ['the last one in red', {reference: true, ordinal: -1, colors: ['red']}],
-    ['Is it available in sky blue?', {reference: true, colors: ['sky-blue']}]
+    ['Is it available in sky blue?', {reference: true, colors: ['sky-blue']}],
+    ['Kash kids panjabi in size 2-3Y?', {collections: ['kash'], sizes: ['2-3Y']}],
+    ['frock for 6-7 years', {styles: ['frock'], sizes: ['6-7Y']}],
+    ['তিন নম্বরটার দাম কত?', {reference: true, ordinal: 3}],
+    ['dui number ta dekhan', {reference: true, ordinal: 2}],
+    ['৪ নম্বরটা কি আছে?', {reference: true, ordinal: 4}]
   ]
 
   it.each(cases)('reads %s', (text, expected) => {
@@ -143,7 +148,15 @@ describe('detectIntents', () => {
     ['lal jamdani dekhan', ['browse']],
     ['জামদানি শাড়ি দেখান', ['browse']],
     ['ketoki jamdani er dam koto?', ['price']],
-    ['XL size stock e ache?', ['stock']]
+    ['XL size stock e ache?', ['stock']],
+    ['আমার অর্ডার কবে আসবে?', ['order_status']],
+    ['When will my order arrive?', ['order_status']],
+    ['order kobe ashbe?', ['order_status']],
+    ['Can I speak to someone from your team?', ['human']],
+    ['I want to speak with a person', ['human']],
+    ['Do you have the Kash kids panjabi in size 2-3Y?', ['stock']],
+    ['Do you have frocks for kids?', ['stock']],
+    ['My number is 01000000002, what are my orders?', ['order_status']]
   ]
 
   it.each(cases)('finds the intent in %s', (text, intents) => {
@@ -154,6 +167,11 @@ describe('detectIntents', () => {
   it('does not take cash on delivery for a delivery question', () => {
     const text = 'Can I pay cash on delivery?'
     expect([...detectIntents(text, extractEntities(text))]).not.toContain('delivery')
+  })
+
+  it('does not take asking for the care email as asking for a person', () => {
+    const text = 'What is your customer care email?'
+    expect([...detectIntents(text, extractEntities(text))]).not.toContain('human')
   })
 
   it('does not take placing an order for asking where one is', () => {

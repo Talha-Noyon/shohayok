@@ -104,7 +104,11 @@ const STATUS = phrases('status', [
   'খবর',
   'deri',
   'দেরি',
-  'late'
+  'late',
+  'kobe asbe',
+  'kobe ashbe',
+  'কবে আসবে',
+  'when will'
 ])
 
 /** Words that make "order" about placing, cancelling or returning one, not finding it */
@@ -207,6 +211,9 @@ const STOCK = phrases('stock', [
   'ache',
   'ase',
   'আছে',
+  'do you have',
+  'do u have',
+  'have you got',
   'pawa jabe',
   'paowa jabe',
   'পাওয়া যাবে',
@@ -259,9 +266,6 @@ const HUMAN = phrases('human', [
   'human',
   'person',
   'representative',
-  'customer care',
-  'customer service',
-  'কাস্টমার কেয়ার',
   'callback',
   'call back',
   'call me',
@@ -279,6 +283,11 @@ const HUMAN = phrases('human', [
   'কথা বলতে',
   'কথা বলব',
   'talk to',
+  'talk with',
+  'speak to',
+  'speak with',
+  'someone from',
+  'connect me',
   'complain',
   'complaint',
   'obhijog',
@@ -307,7 +316,9 @@ export function detectIntents(text: string, entities: Entities): Set<Intent> {
   if (has(BROWSE)) intents.add('browse')
   if (has(PRICE)) intents.add('price')
 
-  if (entities.orderId || (has(ORDER) && has(STATUS) && !has(NOT_STATUS))) {
+  // An order word with a status word, or with the phone an order is found by
+  const lookup = has(STATUS) || entities.phone !== undefined
+  if (entities.orderId || (has(ORDER) && lookup && !has(NOT_STATUS))) {
     intents.add('order_status')
   }
 
