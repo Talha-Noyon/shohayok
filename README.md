@@ -83,6 +83,8 @@ Answers then come from `google/gemma-4-31b-it:free`. Embeddings use `baai/bge-m3
 
 Free models on OpenRouter are rate-limited: about 20 requests a minute, and a small daily allowance until the account has bought $10 of credits. A full eval run makes about 70 requests, so on a fresh account use `--limit` or add credits. The client waits and retries on per-minute limits, and stops with a clear message at the daily one.
 
+A popular free model can also be busy at its upstream provider; the error then says so. Set `CHAT_MODEL` to another `:free` model. On 2026-11-25, when the free Gemma 4 models were busy, `nvidia/nemotron-3-ultra-550b-a55b:free` answered Bengali questions well.
+
 To use Atlas Vector Search on your own machine instead of the in-app search:
 
 ```bash
@@ -90,6 +92,21 @@ docker compose up -d
 # in .env: MONGODB_URI=mongodb://127.0.0.1:27018/?directConnection=true
 npm run ingest
 ```
+
+## Deploy to Vercel
+
+`api/index.ts` runs the app as one Vercel function, and Vercel serves `public/` from its CDN. Vercel cannot run Ollama, so a deployment uses OpenRouter for the models and MongoDB Atlas for the data.
+
+1. Run `npm run ingest` once from your machine, with the same `MONGODB_URI` the deployment will use.
+2. In Atlas, under Network Access, allow connections from anywhere (`0.0.0.0/0`). Vercel functions have no fixed IP address.
+3. In the Vercel project, set `MONGODB_URI`, `LLM_PROVIDER=openrouter` and `OPENROUTER_API_KEY`, and `CHAT_MODEL` if you want a different model.
+4. Deploy:
+
+```bash
+npx vercel --prod
+```
+
+The demo has no login and no rate limit, so anyone with the link spends your OpenRouter allowance.
 
 ## Evaluation
 
