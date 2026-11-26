@@ -11,6 +11,8 @@ import type {Chunk} from '../ingest/chunk.js'
 import {AtlasVectorIndex, supportsVectorSearch} from '../retrieval/atlasIndex.js'
 import {LocalVectorIndex} from '../retrieval/localIndex.js'
 import type {VectorIndex} from '../retrieval/types.js'
+import type {CacheDoc} from '../cache/cache.js'
+import type {CounterDoc} from '../limits/counter.js'
 import type {ChunkDoc, OrderDoc, ProductDoc} from './types.js'
 
 export const CHUNKS = 'chunks'
@@ -21,6 +23,10 @@ export interface Store {
   chunks: Collection<ChunkDoc>
   products: Collection<ProductDoc>
   orders: Collection<OrderDoc>
+  /** Daily model budget and rate-limit counters */
+  usage: Collection<CounterDoc>
+  /** Query embeddings and repeated answers */
+  caches: Collection<CacheDoc<unknown>>
   close(): Promise<void>
 }
 
@@ -49,6 +55,8 @@ export async function openStore(uri: string, dbName: string): Promise<Store> {
     chunks: db.collection<ChunkDoc>(CHUNKS),
     products: db.collection<ProductDoc>('products'),
     orders: db.collection<OrderDoc>('orders'),
+    usage: db.collection<CounterDoc>('usage'),
+    caches: db.collection<CacheDoc<unknown>>('caches'),
     close: () => client.close()
   }
 }
@@ -61,10 +69,15 @@ export async function ensureTextIndex(chunks: Collection<ChunkDoc>): Promise<voi
   )
 }
 
-/** The lookups the tools make: a product by its collection name, or by category and price */
-export async function ensureShopIndexes(store: Store): Promise<void> {
+/**
+ * The lookups the tools make, a product by its collection name or by category and price, and
+ * the TTL indexes that delete expired counters and cache entries
+ */
+export async function ensureIndexes(store: Store): Promise<void> {
   await store.products.createIndex({collection: 1})
   await store.products.createIndex({category: 1, price: 1})
+  await store.usage.createIndex({expiresAt: 1}, {expireAfterSeconds: 0})
+  await store.caches.createIndex({expiresAt: 1}, {expireAfterSeconds: 0})
 }
 
 /** Swaps a collection's contents for new documents */

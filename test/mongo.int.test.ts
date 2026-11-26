@@ -13,6 +13,8 @@ import {Retriever} from '../src/retrieval/retriever.js'
 import {createApp} from '../src/server/app.js'
 import {createServices, type Services} from '../src/services.js'
 import {loadOrders, loadPolicies, loadProducts} from '../src/shop/schema.js'
+import {MongoCache} from '../src/cache/cache.js'
+import {MongoCounter} from '../src/limits/counter.js'
 import {MongoShopData} from '../src/store/shopData.js'
 import {memoryShop} from '../src/tools/memoryShop.js'
 import type {ProductQuery} from '../src/tools/types.js'
@@ -103,6 +105,27 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
       phone: '01000000009',
       status: 'open'
     })
+  })
+
+  it('counts in MongoDB, refusing at the limit even when takes race', async () => {
+    const counter = new MongoCounter(store.usage)
+    const takes = []
+    for (let i = 0; i < 4; i++) takes.push(await counter.take('serial', 3, 60))
+    expect(takes).toEqual([true, true, true, false])
+    const parallel = await Promise.all(Array.from({length: 10}, () => counter.take('race', 5, 60)))
+    expect(parallel.filter(Boolean)).toHaveLength(5)
+    await counter.fill('filled', 4, 60)
+    await counter.refund('filled')
+    expect(await counter.get('filled')).toBe(3)
+  })
+
+  it('caches values in MongoDB until they expire', async () => {
+    let now = Date.now()
+    const cache = new MongoCache<number[]>(store.caches as never, () => now)
+    await cache.set('embed:test', [1, 2], 60)
+    expect(await cache.get('embed:test')).toEqual([1, 2])
+    now += 61_000
+    expect(await cache.get('embed:test')).toBeUndefined()
   })
 
   it('filters keyword search by category', async () => {

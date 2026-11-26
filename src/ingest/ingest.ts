@@ -1,7 +1,7 @@
 import {GENERATED_AT} from '../shop/generate.js'
 import {loadOrders, loadPolicies, loadProducts, type Order} from '../shop/schema.js'
 import {
-  ensureShopIndexes,
+  ensureIndexes,
   ensureTextIndex,
   replaceAll,
   upsertChunks,
@@ -78,7 +78,9 @@ export async function ingestShop(store: Store, options: IngestOptions = {}): Pro
     store.orders,
     shiftOrderDates(orders, options.now ?? Date.now()).map((order) => ({...order, _id: order.id}))
   )
-  await ensureShopIndexes(store)
+  await ensureIndexes(store)
+  // Answers came from the old data
+  await store.caches.deleteMany({_id: {$regex: /^answer:/}})
 
   return {
     products: products.length,
