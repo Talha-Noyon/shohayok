@@ -41,6 +41,8 @@ async function mongoReachable(): Promise<boolean> {
 }
 
 const reachable = await mongoReachable()
+// Locally the suite skips without MongoDB; in CI a skip would hide a broken service
+if (!reachable && process.env.CI) throw new Error(`CI needs MongoDB at ${MONGO_URI}`)
 const allChunks = async () => [
   ...(await loadProducts()).map(productChunk),
   ...(await loadPolicies()).map(policyChunk)
