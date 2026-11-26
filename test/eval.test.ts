@@ -9,15 +9,19 @@ import {
   reciprocalRank,
   scoreHandoff
 } from '../src/eval/metrics.js'
+import {parseEvalSet, loadEvalSet} from '../src/eval/cases.js'
 import {
+  renderFailures,
   renderMarkdown,
   replaceResultsSection,
   RESULTS_END,
   RESULTS_START,
   summarize,
-  type ItemResult,
   type RunInfo
 } from '../src/eval/report.js'
+import {offlineDeps, runCase} from '../src/eval/runner.js'
+import {scoreCase, type CaseResult} from '../src/eval/score.js'
+import {loadPolicies, loadProducts} from '../src/shop/schema.js'
 
 describe('ranking metrics', () => {
   it('finds the first expected document', () => {
@@ -85,90 +89,147 @@ describe('handoff scoring', () => {
 })
 
 const info: RunInfo = {
-  date: '2026-11-25',
-  hardware: 'Test GPU',
-  embedModel: 'bge-m3',
-  embedProvider: 'Ollama',
-  chatModel: 'gemma3:12b',
-  chatProvider: 'Ollama',
-  rewriteModel: 'gemma3:12b',
-  vectorBackend: 'in-app cosine',
+  mode: 'online',
+  dates: '2026-11-27',
+  embedModel: 'embed-free',
+  chatModel: 'chat-free',
+  rewriteModel: 'chat-free',
+  vectorBackend: 'Atlas',
   topK: 4,
-  threshold: 0.5,
-  retrievalOnly: false
+  threshold: 0.25,
+  total: 4,
+  warmed: 2,
+  warmRequests: 1
 }
 
-const result = (overrides: Partial<ItemResult>): ItemResult => ({
-  id: 'X',
+const result = (over: Partial<CaseResult>): CaseResult => ({
+  id: 'x-01',
   lang: 'en',
-  detected: 'en',
-  question: 'q',
-  answerable: true,
-  ranked: ['F01'],
-  rank: 1,
-  rankWithoutRewrite: null,
-  confidence: 0.8,
-  handoff: false,
-  retrievalMs: 100,
-  answer: 'a',
+  kind: 'tool',
+  mode: 'online',
+  expected: 'delivery_fee',
+  actual: 'delivery_fee',
+  decision: 'tool',
+  routeOk: true,
+  readsOk: true,
   factsOk: true,
+  forbidden: [],
   langOk: true,
-  firstTokenMs: 500,
-  totalMs: 1500,
-  ...overrides
+  replyLang: 'en',
+  confidence: null,
+  rewritten: false,
+  reason: 'r',
+  requests: {embed: 0, chat: 0},
+  conversationRequests: {embed: 0, chat: 0},
+  totalMs: 300,
+  firstTokenMs: null,
+  failed: [],
+  answer: 'ok',
+  at: '2026-11-27T01:00:00.000Z',
+  ...over
 })
 
-describe('summarize and renderMarkdown', () => {
-  const results = [
-    result({id: 'E1'}),
-    result({id: 'E2', rank: 3, factsOk: false}),
-    result({id: 'N1', lang: 'banglish', detected: 'banglish', rank: 1, rankWithoutRewrite: null}),
-    result({id: 'N2', lang: 'banglish', detected: 'en', rank: 2, rankWithoutRewrite: 2}),
-    result({
-      id: 'N3',
-      lang: 'banglish',
-      detected: 'banglish',
-      answerable: false,
-      rank: null,
-      confidence: 0.3,
-      handoff: true,
-      factsOk: null
-    })
-  ]
-  const summary = summarize(results, info)
+const results: CaseResult[] = [
+  result({id: 'deliv-01'}),
+  result({id: 'order-01', lang: 'banglish', readsOk: false, failed: ['reads']}),
+  result({
+    id: 'policy-01',
+    kind: 'answer',
+    expected: 'answer',
+    actual: 'answer',
+    decision: 'answer',
+    rank: 1,
+    confidence: 0.5,
+    requests: {embed: 0, chat: 1},
+    conversationRequests: {embed: 0, chat: 1},
+    totalMs: 4000,
+    firstTokenMs: 2000
+  }),
+  result({
+    id: 'off-01',
+    lang: 'bn',
+    kind: 'handoff',
+    expected: 'handoff',
+    actual: 'handoff',
+    decision: 'handoff',
+    readsOk: null,
+    factsOk: null,
+    confidence: 0.1,
+    requests: {embed: 1, chat: 0},
+    conversationRequests: {embed: 1, chat: 0}
+  })
+]
+const cases = parseEvalSet(
+  results.map((r) => ({
+    id: r.id,
+    lang: r.lang,
+    kind: r.kind,
+    question: 'q',
+    expect: {route: r.expected, ...(r.id === 'order-01' && {forbid: ['Mirpur']})}
+  }))
+)
+
+describe('summarize', () => {
+  const summary = summarize(results, info, cases)
 
   it('scores each language and the whole set', () => {
-    expect(summary.byLang.en).toMatchObject({
-      n: 2,
-      hit1: 0.5,
-      hit3: 1,
-      mrr: (1 + 1 / 3) / 2,
-      facts: 0.5
-    })
-    expect(summary.byLang.banglish).toMatchObject({n: 3, detection: 2 / 3, hit3: 1})
-    expect(summary.byLang.bn.n).toBe(0)
-    expect(summary.byLang.all.n).toBe(5)
+    expect(summary.byLang.all).toMatchObject({n: 4, route: 1, reads: 2 / 3, facts: 1, language: 1})
+    expect(summary.byLang.banglish).toMatchObject({n: 1, reads: 0})
+    expect(summary.byKind.answer).toEqual({n: 1, route: 1})
   })
 
-  it('compares Banglish retrieval with and without the rewrite', () => {
-    expect(summary.banglishRewrite).toEqual({withRewrite: 1, withoutRewrite: 0.5})
+  it('scores search, handoff, cost and speed', () => {
+    expect(summary.search).toMatchObject({n: 1, hit1: 1, mrr: 1})
+    expect(summary.handoff).toEqual({precision: 1, recall: 1, n: 2})
+    expect(summary.cost.fixed).toEqual({n: 2, mean: 0})
+    expect(summary.cost.model).toEqual({n: 2, mean: 1, max: 1})
+    expect(summary.cost.total).toBe(2)
+    expect(summary.latency.answered.p50).toBe(4000)
+    expect(summary.safety).toEqual({checked: 1, leaks: []})
+    expect(summary.failures).toEqual([
+      {id: 'order-01', failed: ['reads'], expected: 'delivery_fee', actual: 'delivery_fee'}
+    ])
   })
 
-  it('renders a readable report', () => {
+  it('renders the tables and says what the numbers include', () => {
     const markdown = renderMarkdown(summary)
-    expect(markdown).toContain('Measured 2026-11-25 on Test GPU')
-    expect(markdown).toContain('| Right document in the top 3 | 100% | – | 100% | 100% |')
-    expect(markdown).toContain('100% with the rewrite step, 50% without it')
-    expect(markdown).toContain('| Full answer | 1.5 s | 1.5 s |')
-    expect(markdown).toContain('via Ollama')
-    expect(markdown).not.toContain('Cloud models were used')
+    expect(markdown).toContain('| Went to the right place | 100% | 100% | 100% | 100% |')
+    expect(markdown).toContain('`embed-free`')
+    expect(markdown).toContain('The run spent 3 free model requests in all.')
+    expect(markdown).toContain('Safety: none of the 1 replies')
+    expect(renderFailures(summary)).toContain('| order-01 | reads | delivery_fee | delivery_fee |')
   })
 
-  it('warns that cloud latency includes the network', () => {
-    const cloud = summarize(results, {...info, chatProvider: 'OpenRouter'})
-    const markdown = renderMarkdown(cloud)
-    expect(markdown).toContain('answers `gemma3:12b` via OpenRouter')
-    expect(markdown).toContain('Cloud models were used, so latency includes the network')
+  it('offline, leaves out what only the models can measure', () => {
+    const offline = summarize(results, {...info, mode: 'offline'}, cases)
+    expect(offline.search).toBeNull()
+    expect(offline.handoff).toBeNull()
+    expect(renderMarkdown(offline)).not.toContain('Cost and speed')
+  })
+})
+
+describe('the eval set', () => {
+  it('covers every language and kind, with documents that exist', async () => {
+    const set = await loadEvalSet()
+    expect(set.length).toBeGreaterThanOrEqual(100)
+    for (const lang of ['en', 'bn', 'banglish']) {
+      expect(set.filter((item) => item.lang === lang).length).toBeGreaterThanOrEqual(25)
+    }
+    const ids = new Set([
+      ...(await loadProducts()).map((p) => p.id),
+      ...(await loadPolicies()).map((p) => p.id)
+    ])
+    for (const item of set) for (const doc of item.expect.docs) expect(ids).toContain(doc)
+  })
+
+  it('offline, routes and answers from data without a leak', async () => {
+    const set = await loadEvalSet()
+    const deps = await offlineDeps()
+    const scored = []
+    for (const item of set)
+      scored.push(scoreCase(item, await runCase(item, deps, 'eval'), 'offline'))
+    expect(scored.flatMap((r) => r.forbidden)).toEqual([])
+    expect(scored.filter((r) => r.routeOk).length / scored.length).toBeGreaterThanOrEqual(0.95)
   })
 })
 

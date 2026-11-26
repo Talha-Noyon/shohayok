@@ -1,11 +1,9 @@
-import type {Hit, VectorIndex} from './types.js'
+import type {ChunkFilters} from '../ingest/chunk.js'
+import {matchesFilter, type Hit, type SearchFilter, type VectorIndex} from './types.js'
 import {dot, normalize} from './vectorMath.js'
 
-export interface IndexedChunk {
-  chunkId: string
-  docId: string
-  title: string
-  text: string
+export interface IndexedChunk extends Omit<Hit, 'score'> {
+  filters: ChunkFilters
   embedding: number[]
 }
 
@@ -16,17 +14,21 @@ export interface IndexedChunk {
 export class LocalVectorIndex implements VectorIndex {
   readonly kind = 'local' as const
   readonly dimensions: number
-  private readonly rows: {chunk: Omit<IndexedChunk, 'embedding'>; vector: Float32Array}[]
+  private readonly rows: {
+    chunk: Omit<IndexedChunk, 'embedding' | 'filters'>
+    filters: ChunkFilters
+    vector: Float32Array
+  }[]
 
   constructor(chunks: IndexedChunk[]) {
     this.dimensions = chunks[0]?.embedding.length ?? 0
-    this.rows = chunks.map(({embedding, ...chunk}) => {
+    this.rows = chunks.map(({embedding, filters, ...chunk}) => {
       if (embedding.length !== this.dimensions) {
         throw new Error(
           `Chunk ${chunk.chunkId} has ${embedding.length} dimensions, expected ${this.dimensions}`
         )
       }
-      return {chunk, vector: normalize(embedding)}
+      return {chunk, filters, vector: normalize(embedding)}
     })
   }
 
@@ -34,7 +36,7 @@ export class LocalVectorIndex implements VectorIndex {
     return this.rows.length
   }
 
-  async search(vector: number[], k: number): Promise<Hit[]> {
+  async search(vector: number[], k: number, filter?: SearchFilter): Promise<Hit[]> {
     if (this.rows.length === 0) return []
     if (vector.length !== this.dimensions) {
       throw new Error(
@@ -44,6 +46,7 @@ export class LocalVectorIndex implements VectorIndex {
     }
     const query = normalize(vector)
     return this.rows
+      .filter((row) => matchesFilter(row.filters, filter))
       .map(({chunk, vector: stored}) => ({...chunk, score: dot(query, stored)}))
       .sort((a, b) => b.score - a.score)
       .slice(0, k)

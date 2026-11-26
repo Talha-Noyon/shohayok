@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mongo:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping: 1})'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017
+      MONGODB_DB: shohayok_ci
+      MONGODB_TEST_URI: mongodb://127.0.0.1:27017
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      # Unit tests, and the integration tests against the MongoDB service
+      - run: npm test
+      # The shop into MongoDB without vectors: no model, no key
+      - run: npm run ingest -- --offline
+      # Routing, reading and every fixed reply, scored with no model; fails on any leak
+      - run: npm run eval -- --offline
+      - run: cat results/offline.md >> "$GITHUB_STEP_SUMMARY"
+      - run: npm run build

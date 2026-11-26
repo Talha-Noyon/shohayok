@@ -1,11 +1,11 @@
 import {msSince} from '../util/time.js'
 import {fuse, type FusedHit, type RankedList} from './fusion.js'
-import type {Hit, VectorIndex} from './types.js'
+import type {Hit, SearchFilter, VectorIndex} from './types.js'
 
 export interface RetrieverDeps {
   embed(texts: string[]): Promise<number[][]>
   vectorIndex: VectorIndex
-  keyword(query: string, k: number): Promise<Hit[]>
+  keyword(query: string, k: number, filter?: SearchFilter): Promise<Hit[]>
   /** How many hits each single search returns before fusion */
   perListK?: number
 }
@@ -29,7 +29,7 @@ export class Retriever {
     this.deps = deps
   }
 
-  async retrieve(queries: string[], topK: number): Promise<Retrieval> {
+  async retrieve(queries: string[], topK: number, filter?: SearchFilter): Promise<Retrieval> {
     const unique = [...new Set(queries.map((query) => query.trim()).filter(Boolean))]
     if (unique.length === 0) return {hits: [], confidence: null, embedMs: 0, searchMs: 0}
     const perListK = this.deps.perListK ?? Math.max(topK * 2, 8)
@@ -42,9 +42,9 @@ export class Retriever {
     const lists: RankedList[] = await Promise.all(
       unique.flatMap((query, i) => [
         this.deps.vectorIndex
-          .search(vectors[i] ?? [], perListK)
+          .search(vectors[i] ?? [], perListK, filter)
           .then((hits) => ({hits, cosine: true})),
-        this.deps.keyword(query, perListK).then((hits) => ({hits, cosine: false}))
+        this.deps.keyword(query, perListK, filter).then((hits) => ({hits, cosine: false}))
       ])
     )
     const searchMs = msSince(searchStart)

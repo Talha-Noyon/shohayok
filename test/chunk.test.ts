@@ -1,62 +1,128 @@
 import {describe, expect, it} from 'vitest'
 
-import type {SourceDoc} from '../src/corpus/schema.js'
-import {chunkHeader, splitLong, toChunks} from '../src/ingest/chunk.js'
+import {MAX_CHUNK_CHARS, policyChunk, productChunk} from '../src/ingest/chunk.js'
+import {loadPolicies, loadProducts, type Policy, type Product} from '../src/shop/schema.js'
 
-const saree: SourceDoc = {
-  id: 'P01',
-  type: 'product',
-  title: {en: 'Tangail cotton saree', bn: 'টাঙ্গাইল সুতি শাড়ি'},
-  body: {en: 'Soft handwoven cotton.', bn: 'নরম তাঁতের সুতি শাড়ি।'},
-  price: 1450,
-  tags: ['saree', 'cotton']
+const product: Product = {
+  id: 'P001',
+  collection: 'shiuli',
+  category: 'sharee',
+  style: 'jamdani',
+  name: {en: 'Shiuli Jamdani Sharee', bn: 'শিউলি জামদানি শাড়ি'},
+  fabric: {en: 'fine cotton', bn: 'মিহি সুতি'},
+  price: 12500,
+  colors: ['red', 'sky-blue'],
+  sizes: ['Free size'],
+  occasions: ['wedding'],
+  origin: 'narayanganj',
+  description: {
+    en: 'Fine cotton with small buti all over.',
+    bn: 'মিহি সুতির কাপড়ে সারা জমিনে ছোট ছোট বুটি।'
+  },
+  care: {en: 'Dry clean only.', bn: 'শুধু ড্রাই ক্লিন করুন।'},
+  variants: [
+    {sku: 'P001-red-free-size', color: 'red', size: 'Free size', stock: 7},
+    {sku: 'P001-sky-blue-free-size', color: 'sky-blue', size: 'Free size', stock: 0}
+  ]
 }
 
-describe('chunkHeader', () => {
-  it('writes the price with both kinds of digits', () => {
-    expect(chunkHeader(saree)).toBe(
-      'Tangail cotton saree / টাঙ্গাইল সুতি শাড়ি\nPrice: Tk 1450 / দাম: ১৪৫০ টাকা\nTags: saree, cotton'
-    )
+const policy: Policy = {
+  id: 'F01',
+  type: 'policy',
+  title: {en: 'Delivery inside Dhaka', bn: 'ঢাকার ভিতরে ডেলিভারি'},
+  body: {en: 'Delivery inside Dhaka costs Tk 70.', bn: 'ঢাকার ভিতরে ডেলিভারি চার্জ ৭০ টাকা।'},
+  tags: ['delivery', 'dhaka']
+}
+
+const BENGALI = /[ঀ-৿]/
+
+describe('productChunk', () => {
+  const chunk = productChunk(product)
+
+  it('keeps a product in one chunk, with what search can filter on', () => {
+    expect(chunk).toMatchObject({
+      id: 'P001#0',
+      docId: 'P001',
+      type: 'product',
+      title: 'Shiuli Jamdani Sharee / শিউলি জামদানি শাড়ি',
+      filters: {type: 'product', category: 'sharee', colors: ['red', 'sky-blue'], price: 12500}
+    })
+  })
+
+  it('writes the price in both kinds of digits', () => {
+    expect(chunk.textEn).toContain('Tk 12,500')
+    expect(chunk.textBn).toContain('১২,৫০০ টাকা')
+  })
+
+  it('names colours and sizes in both languages', () => {
+    expect(chunk.textEn).toContain('Red, Sky Blue')
+    expect(chunk.textBn).toContain('লাল, আকাশি')
+    expect(chunk.textBn).toContain('ফ্রি সাইজ')
+  })
+
+  it('keeps each language on its own side for the answer prompt', () => {
+    expect(chunk.textEn).toContain('Fine cotton with small buti all over.')
+    expect(chunk.textEn).not.toMatch(BENGALI)
+    expect(chunk.textBn).toContain('মিহি সুতির কাপড়ে')
+    expect(chunk.textBn).not.toContain('Fine cotton')
+  })
+
+  it('searches both languages and the spellings customers type', () => {
+    expect(chunk.text).toContain(chunk.textEn)
+    expect(chunk.text).toContain(chunk.textBn)
+    for (const spelling of ['jamdhani', 'saree', 'shewli', 'lal', 'akashi']) {
+      expect(chunk.text).toMatch(new RegExp(`Also written: .*\\b${spelling}\\b`))
+    }
+  })
+
+  it('leaves stock out, because stock changes and the text is embedded once', () => {
+    const restocked = {
+      ...product,
+      variants: product.variants.map((variant) => ({...variant, stock: 99}))
+    }
+    expect(productChunk(restocked)).toEqual(chunk)
+  })
+
+  it("finds a kids' panjabi by the spellings of panjabi", () => {
+    const kids = productChunk({
+      ...product,
+      category: 'kids',
+      style: 'kids-panjabi',
+      sizes: ['2-3Y']
+    })
+    expect(kids.text).toMatch(/Also written: .*\bpunjabi\b/)
+    expect(kids.textBn).toContain('২–৩ বছর')
   })
 })
 
-describe('toChunks', () => {
-  it('keeps a short document in one chunk with both languages', () => {
-    const chunks = toChunks(saree)
-    expect(chunks).toHaveLength(1)
-    expect(chunks[0]).toMatchObject({id: 'P01#0', docId: 'P01', type: 'product'})
-    expect(chunks[0]?.text).toContain('Soft handwoven cotton.')
-    expect(chunks[0]?.text).toContain('নরম তাঁতের সুতি শাড়ি।')
-  })
+describe('policyChunk', () => {
+  const chunk = policyChunk(policy)
 
-  it('splits a long document and repeats the header in every chunk', () => {
-    const long: SourceDoc = {
-      ...saree,
-      body: {
-        en: Array.from(
-          {length: 12},
-          (_, i) => `English sentence number ${i} about the saree.`
-        ).join('\n'),
-        bn: Array.from({length: 12}, (_, i) => `শাড়ি নিয়ে বাংলা বাক্য ${i}।`).join('\n')
-      }
-    }
-    const chunks = toChunks(long, 300)
-    expect(chunks.length).toBeGreaterThan(1)
-    for (const chunk of chunks) {
-      expect(chunk.text.length).toBeLessThanOrEqual(300)
-      expect(chunk.text.startsWith(chunkHeader(long))).toBe(true)
-    }
-    expect(chunks.map((chunk) => chunk.id)).toEqual(chunks.map((_, n) => `P01#${n}`))
+  it('searches both languages and keeps one each for the prompt', () => {
+    expect(chunk).toMatchObject({
+      id: 'F01#0',
+      docId: 'F01',
+      type: 'policy',
+      filters: {type: 'policy'}
+    })
+    expect(chunk.textEn).toBe('Delivery inside Dhaka\nDelivery inside Dhaka costs Tk 70.')
+    expect(chunk.textBn).toBe('ঢাকার ভিতরে ডেলিভারি\nঢাকার ভিতরে ডেলিভারি চার্জ ৭০ টাকা।')
+    expect(chunk.text).toContain('Tags: delivery, dhaka')
   })
 })
 
-describe('splitLong', () => {
-  it('breaks at the Bengali full stop', () => {
-    expect(splitLong('প্রথম বাক্য। দ্বিতীয় বাক্য।', 15)).toEqual(['প্রথম বাক্য।', 'দ্বিতীয় বাক্য।'])
+const products = await loadProducts()
+const policies = await loadPolicies()
+
+describe('the shop data', () => {
+  it('has 15 policies with unique ids', () => {
+    expect(policies).toHaveLength(15)
+    expect(new Set(policies.map((item) => item.id)).size).toBe(15)
   })
 
-  it('cuts a sentence that is longer than the budget', () => {
-    const parts = splitLong('x'.repeat(250), 100)
-    expect(parts.map((part) => part.length)).toEqual([100, 100, 50])
+  it('fits every product and policy into one chunk', () => {
+    for (const chunk of [...products.map(productChunk), ...policies.map(policyChunk)]) {
+      expect(chunk.text.length, chunk.id).toBeLessThanOrEqual(MAX_CHUNK_CHARS)
+    }
   })
 })

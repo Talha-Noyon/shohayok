@@ -1,5 +1,9 @@
 node_modules/
 dist/
-.env
+.env*
+!.env.example
+.vercel
 results/*.json
 !results/.gitkeep
+results/*.jsonl
+results/offline.md

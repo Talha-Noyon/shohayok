@@ -1,17 +1,29 @@
 import {describe, expect, it} from 'vitest'
 
-import {atlasScoreToCosine} from '../src/retrieval/atlasIndex.js'
+import {
+  atlasScoreToCosine,
+  needsRebuild,
+  vectorIndexDefinition
+} from '../src/retrieval/atlasIndex.js'
 import {fuse, RRF_K} from '../src/retrieval/fusion.js'
 import {toTextSearch} from '../src/retrieval/keyword.js'
 import {LocalVectorIndex, type IndexedChunk} from '../src/retrieval/localIndex.js'
 import {Retriever} from '../src/retrieval/retriever.js'
-import type {Hit, VectorIndex} from '../src/retrieval/types.js'
+import {
+  matchesFilter,
+  toMongoFilter,
+  type Hit,
+  type SearchFilter,
+  type VectorIndex
+} from '../src/retrieval/types.js'
 
 const hit = (chunkId: string, score: number): Hit => ({
   chunkId,
   docId: chunkId.split('#')[0] ?? chunkId,
   title: chunkId,
   text: chunkId,
+  textEn: chunkId,
+  textBn: chunkId,
   score
 })
 
@@ -37,11 +49,18 @@ describe('fuse', () => {
 })
 
 describe('LocalVectorIndex', () => {
-  const chunk = (chunkId: string, embedding: number[]): IndexedChunk => ({
+  const chunk = (
+    chunkId: string,
+    embedding: number[],
+    filters: IndexedChunk['filters'] = {type: 'policy'}
+  ): IndexedChunk => ({
     chunkId,
     docId: chunkId,
     title: chunkId,
     text: chunkId,
+    textEn: chunkId,
+    textBn: chunkId,
+    filters,
     embedding
   })
 
@@ -65,6 +84,26 @@ describe('LocalVectorIndex', () => {
     expect(() => new LocalVectorIndex([chunk('a', [1, 0]), chunk('b', [1, 0, 0])])).toThrow(
       'has 3 dimensions, expected 2'
     )
+  })
+
+  it('searches only the chunks that match a filter', async () => {
+    const index = new LocalVectorIndex([
+      chunk('red-sharee', [1, 0], {
+        type: 'product',
+        category: 'sharee',
+        colors: ['red'],
+        price: 900
+      }),
+      chunk('blue-sharee', [1, 0.1], {
+        type: 'product',
+        category: 'sharee',
+        colors: ['blue'],
+        price: 800
+      }),
+      chunk('policy', [1, 0])
+    ])
+    const hits = await index.search([1, 0], 3, {type: 'product', colors: ['blue']})
+    expect(hits.map((h) => h.chunkId)).toEqual(['blue-sharee'])
   })
 
   it('finds nothing in an empty index', async () => {
@@ -97,6 +136,29 @@ describe('Retriever', () => {
     expect(result.confidence).toBe(0.71)
   })
 
+  it('passes the filter to both searches', async () => {
+    const seen: (SearchFilter | undefined)[] = []
+    const retriever = new Retriever({
+      embed: async (texts) => texts.map(() => [1, 0]),
+      vectorIndex: {
+        kind: 'local',
+        search: async (_vector, _k, filter) => {
+          seen.push(filter)
+          return []
+        }
+      },
+      keyword: async (_query, _k, filter) => {
+        seen.push(filter)
+        return []
+      }
+    })
+    await retriever.retrieve(['lal sharee'], 4, {type: 'product', category: 'sharee'})
+    expect(seen).toEqual([
+      {type: 'product', category: 'sharee'},
+      {type: 'product', category: 'sharee'}
+    ])
+  })
+
   it('returns nothing, and no confidence, for an empty question', async () => {
     const retriever = new Retriever({
       embed: async () => [],
@@ -121,5 +183,63 @@ describe('search helpers', () => {
     expect(atlasScoreToCosine(1)).toBe(1)
     expect(atlasScoreToCosine(0.75)).toBe(0.5)
     expect(atlasScoreToCosine(0.5)).toBe(0)
+  })
+})
+
+describe('search filters', () => {
+  const redSharee = {type: 'product' as const, category: 'sharee', colors: ['red'], price: 3000}
+
+  it('turns a filter into a MongoDB query on the chunk filter fields', () => {
+    expect(toMongoFilter(undefined)).toEqual({})
+    expect(
+      toMongoFilter({
+        type: 'product',
+        category: 'sharee',
+        colors: ['red', 'blue'],
+        minPrice: 1000,
+        maxPrice: 5000
+      })
+    ).toEqual({
+      'filters.type': 'product',
+      'filters.category': 'sharee',
+      'filters.colors': {$in: ['red', 'blue']},
+      'filters.price': {$gte: 1000, $lte: 5000}
+    })
+  })
+
+  it('applies the same filter in memory', () => {
+    expect(matchesFilter(redSharee, undefined)).toBe(true)
+    expect(
+      matchesFilter(redSharee, {category: 'sharee', colors: ['green', 'red'], maxPrice: 5000})
+    ).toBe(true)
+    expect(matchesFilter(redSharee, {maxPrice: 2000})).toBe(false)
+    expect(matchesFilter(redSharee, {minPrice: 3500})).toBe(false)
+    expect(matchesFilter(redSharee, {colors: ['blue']})).toBe(false)
+    expect(matchesFilter({type: 'policy'}, {type: 'product'})).toBe(false)
+    expect(matchesFilter({type: 'policy'}, {maxPrice: 100})).toBe(false)
+  })
+
+  it('declares every filter field in the Atlas vector index', () => {
+    const fields = vectorIndexDefinition(2048).fields
+    expect(fields[0]).toEqual({
+      type: 'vector',
+      path: 'embedding',
+      numDimensions: 2048,
+      similarity: 'cosine'
+    })
+    expect(fields.slice(1)).toEqual(
+      ['filters.type', 'filters.category', 'filters.colors', 'filters.price'].map((path) => ({
+        type: 'filter',
+        path
+      }))
+    )
+  })
+
+  it('rebuilds the Atlas index when the size or the filter fields changed', () => {
+    const wanted = vectorIndexDefinition(2048)
+    expect(needsRebuild(wanted, wanted)).toBe(false)
+    expect(needsRebuild(vectorIndexDefinition(1024), wanted)).toBe(true)
+    expect(needsRebuild({fields: wanted.fields.slice(0, 1)}, wanted)).toBe(true)
+    expect(needsRebuild(undefined, wanted)).toBe(true)
   })
 })

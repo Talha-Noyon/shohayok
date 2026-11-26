@@ -8,9 +8,13 @@ export const PROVIDER_LABEL: Record<ProviderName, string> = {
   openrouter: 'OpenRouter'
 }
 
-/** Ollama lists `bge-m3` as `bge-m3:latest` */
+/** Ollama lists `bge-m3` as `bge-m3:latest`. A comma list needs every model in it. */
 export function hasModel(available: string[], model: string): boolean {
-  return available.some((name) => name === model || name === `${model}:latest`)
+  return model
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .every((part) => available.some((name) => name === part || name === `${part}:latest`))
 }
 
 export function createProvider(name: ProviderName, config: Config): LlmProvider {

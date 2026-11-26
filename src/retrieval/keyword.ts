@@ -1,7 +1,7 @@
 import type {Collection} from 'mongodb'
 
 import type {ChunkDoc} from '../store/types.js'
-import type {Hit} from './types.js'
+import {toMongoFilter, type Hit, type SearchFilter} from './types.js'
 
 /**
  * `$text` reads double quotes as a phrase search and a leading minus as "must not contain".
@@ -22,15 +22,23 @@ export function toTextSearch(query: string): string {
 export async function keywordSearch(
   chunks: Collection<ChunkDoc>,
   query: string,
-  k: number
+  k: number,
+  filter?: SearchFilter
 ): Promise<Hit[]> {
   const search = toTextSearch(query)
   if (!search) return []
   const docs = await chunks
     .find(
-      {$text: {$search: search, $language: 'none'}},
+      {$text: {$search: search, $language: 'none'}, ...toMongoFilter(filter)},
       {
-        projection: {docId: 1, title: 1, text: 1, score: {$meta: 'textScore'}},
+        projection: {
+          docId: 1,
+          title: 1,
+          text: 1,
+          textEn: 1,
+          textBn: 1,
+          score: {$meta: 'textScore'}
+        },
         sort: {score: {$meta: 'textScore'}},
         limit: k
       }
@@ -41,6 +49,8 @@ export async function keywordSearch(
     docId: doc.docId,
     title: doc.title,
     text: doc.text,
+    textEn: doc.textEn,
+    textBn: doc.textBn,
     score: (doc as unknown as {score: number}).score
   }))
 }

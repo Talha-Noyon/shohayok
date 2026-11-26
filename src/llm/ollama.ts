@@ -1,5 +1,5 @@
 import {parseJsonLoose, readLines} from './text.js'
-import type {ChatMessage, LlmProvider} from './types.js'
+import type {ChatInfo, ChatMessage, LlmProvider} from './types.js'
 
 export class OllamaError extends Error {
   readonly status: number | undefined
@@ -17,6 +17,9 @@ export interface OllamaClientOptions {
   timeoutMs?: number
   fetchImpl?: typeof fetch
 }
+
+/** Ollama has no fallback routing: a model list means its first model */
+const firstModel = (model: string) => model.split(',')[0]?.trim() || model
 
 /** A small client for the Ollama endpoints this project needs, on plain fetch */
 export class OllamaClient implements LlmProvider {
@@ -50,7 +53,14 @@ export class OllamaClient implements LlmProvider {
   }
 
   /** One complete answer, constrained to `schema` by Ollama's structured outputs */
-  async chatJson(model: string, messages: ChatMessage[], schema: object): Promise<unknown> {
+  async chatJson(
+    model: string,
+    messages: ChatMessage[],
+    schema: object,
+    info?: ChatInfo
+  ): Promise<unknown> {
+    model = firstModel(model)
+    if (info) info.model = model
     const body = await this.request<{message?: {content?: string}}>('POST', '/api/chat', {
       model,
       messages,
@@ -66,8 +76,11 @@ export class OllamaClient implements LlmProvider {
   async *chatStream(
     model: string,
     messages: ChatMessage[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    info?: ChatInfo
   ): AsyncGenerator<string> {
+    model = firstModel(model)
+    if (info) info.model = model
     const response = await this.send(
       'POST',
       '/api/chat',

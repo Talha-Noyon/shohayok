@@ -1,0 +1,6 @@
+# Never upload local secrets or local-only files to Vercel
+.env*
+results
+test
+dist
+node_modules

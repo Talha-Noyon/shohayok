@@ -5,7 +5,9 @@ import {loadConfig} from '../src/config.js'
 
 describe('loadConfig', () => {
   it('runs everything on Ollama by default, sized for one 12 GB GPU', () => {
-    expect(loadConfig({})).toEqual({
+    const {hashSecret, ...config} = loadConfig({})
+    expect(hashSecret).toMatch(/^[A-Za-z0-9_-]{43}$/)
+    expect(config).toEqual({
       mongoUri: 'mongodb://127.0.0.1:27017',
       mongoDb: 'shohayok',
       dnsServers: [],
@@ -20,8 +22,23 @@ describe('loadConfig', () => {
       vectorBackend: 'auto',
       handoffThreshold: 0.5,
       topK: 4,
-      port: 3000
+      port: 3000,
+      budget: {enabled: false, dailyLimit: 45, visitorLimit: 15},
+      rate: {perMinute: 8, perDay: 100}
     })
+  })
+
+  it('counts free model requests whenever OpenRouter is in use', () => {
+    const config = loadConfig({
+      LLM_PROVIDER: 'ollama',
+      EMBED_PROVIDER: 'openrouter',
+      OPENROUTER_API_KEY: 'sk-or-test',
+      DAILY_MODEL_BUDGET: '20',
+      VISITOR_DAILY_BUDGET: '5',
+      HASH_SECRET: 'a secret'
+    })
+    expect(config.budget).toEqual({enabled: true, dailyLimit: 20, visitorLimit: 5})
+    expect(config.hashSecret).toBe('a secret')
   })
 
   it('picks OpenRouter model ids when OpenRouter is the provider', () => {
@@ -30,10 +47,20 @@ describe('loadConfig', () => {
       chatProvider: 'openrouter',
       embedProvider: 'openrouter',
       openRouterKey: 'sk-or-test',
-      embedModel: 'baai/bge-m3',
-      chatModel: 'google/gemma-4-31b-it:free',
-      rewriteModel: 'google/gemma-4-31b-it:free'
+      embedModel: 'nvidia/nemotron-3.5-embed-1b:free',
+      chatModel: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+      rewriteModel: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+      handoffThreshold: 0.25
     })
+  })
+
+  it('keeps a handoff threshold that was set, whatever the embedding model', () => {
+    const config = loadConfig({
+      LLM_PROVIDER: 'openrouter',
+      OPENROUTER_API_KEY: 'sk-or-test',
+      HANDOFF_THRESHOLD: '0.4'
+    })
+    expect(config.handoffThreshold).toBe(0.4)
   })
 
   it('can take answers from OpenRouter and embeddings from Ollama', () => {
@@ -46,7 +73,8 @@ describe('loadConfig', () => {
       chatProvider: 'openrouter',
       embedProvider: 'ollama',
       embedModel: 'bge-m3',
-      chatModel: 'google/gemma-4-31b-it:free'
+      chatModel: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+      handoffThreshold: 0.5
     })
   })
 

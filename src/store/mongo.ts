@@ -1,17 +1,32 @@
-import {MongoClient, type Collection} from 'mongodb'
+import {
+  MongoClient,
+  type Collection,
+  type Db,
+  type Document,
+  type OptionalUnlessRequiredId
+} from 'mongodb'
 
 import type {Config} from '../config.js'
 import type {Chunk} from '../ingest/chunk.js'
 import {AtlasVectorIndex, supportsVectorSearch} from '../retrieval/atlasIndex.js'
 import {LocalVectorIndex} from '../retrieval/localIndex.js'
 import type {VectorIndex} from '../retrieval/types.js'
-import type {ChunkDoc} from './types.js'
+import type {CacheDoc} from '../cache/cache.js'
+import type {CounterDoc} from '../limits/counter.js'
+import type {ChunkDoc, OrderDoc, ProductDoc} from './types.js'
 
 export const CHUNKS = 'chunks'
 
 export interface Store {
   client: MongoClient
+  db: Db
   chunks: Collection<ChunkDoc>
+  products: Collection<ProductDoc>
+  orders: Collection<OrderDoc>
+  /** Daily model budget and rate-limit counters */
+  usage: Collection<CounterDoc>
+  /** Query embeddings and repeated answers */
+  caches: Collection<CacheDoc<unknown>>
   close(): Promise<void>
 }
 
@@ -21,7 +36,8 @@ export function redactUri(uri: string): string {
 }
 
 export async function openStore(uri: string, dbName: string): Promise<Store> {
-  const client = new MongoClient(uri, {serverSelectionTimeoutMS: 5_000})
+  // A small pool: every serverless instance opens its own, and a free Atlas cluster allows 500
+  const client = new MongoClient(uri, {serverSelectionTimeoutMS: 5_000, maxPoolSize: 10})
   try {
     await client.connect()
   } catch (error) {
@@ -33,7 +49,16 @@ export async function openStore(uri: string, dbName: string): Promise<Store> {
   const db = client.db(dbName)
   // Atlas lists and builds search indexes only on a collection that exists
   if (!(await db.listCollections({name: CHUNKS}).hasNext())) await db.createCollection(CHUNKS)
-  return {client, chunks: db.collection<ChunkDoc>(CHUNKS), close: () => client.close()}
+  return {
+    client,
+    db,
+    chunks: db.collection<ChunkDoc>(CHUNKS),
+    products: db.collection<ProductDoc>('products'),
+    orders: db.collection<OrderDoc>('orders'),
+    usage: db.collection<CounterDoc>('usage'),
+    caches: db.collection<CacheDoc<unknown>>('caches'),
+    close: () => client.close()
+  }
 }
 
 /** Language "none": MongoDB has no Bengali stemmer, and English stemming would mangle Banglish */
@@ -44,11 +69,35 @@ export async function ensureTextIndex(chunks: Collection<ChunkDoc>): Promise<voi
   )
 }
 
-/** Writes every chunk with its vector and removes chunks that are no longer in the data */
+/**
+ * The lookups the tools make, a product by its collection name or by category and price, and
+ * the TTL indexes that delete expired counters and cache entries
+ */
+export async function ensureIndexes(store: Store): Promise<void> {
+  await store.products.createIndex({collection: 1})
+  await store.products.createIndex({category: 1, price: 1})
+  await store.usage.createIndex({expiresAt: 1}, {expireAfterSeconds: 0})
+  await store.caches.createIndex({expiresAt: 1}, {expireAfterSeconds: 0})
+  await store.db.collection('conversations').createIndex({expiresAt: 1}, {expireAfterSeconds: 0})
+}
+
+/** Swaps a collection's contents for new documents */
+export async function replaceAll<T extends Document>(
+  collection: Collection<T>,
+  docs: OptionalUnlessRequiredId<T>[]
+): Promise<void> {
+  await collection.deleteMany({})
+  if (docs.length > 0) await collection.insertMany(docs)
+}
+
+/**
+ * Writes every chunk, with its vector when there is one, and removes chunks that are no longer
+ * in the data
+ */
 export async function upsertChunks(
   chunks: Collection<ChunkDoc>,
-  rows: {chunk: Chunk; embedding: number[]}[],
-  embedModel: string
+  rows: {chunk: Chunk; embedding?: number[]}[],
+  embedModel?: string
 ): Promise<{written: number; removed: number}> {
   const updatedAt = new Date()
   if (rows.length > 0) {
@@ -61,8 +110,10 @@ export async function upsertChunks(
             type: chunk.type,
             title: chunk.title,
             text: chunk.text,
-            embedding,
-            embedModel,
+            textEn: chunk.textEn,
+            textBn: chunk.textBn,
+            filters: chunk.filters,
+            ...(embedding && embedModel && {embedding, embedModel}),
             updatedAt
           },
           upsert: true
@@ -91,7 +142,9 @@ export async function openVectorIndex(
   backend: 'atlas' | 'local',
   embedModel: string
 ): Promise<VectorIndex> {
-  const others = (await chunks.distinct('embedModel')).filter((model) => model !== embedModel)
+  const others = (await chunks.distinct('embedModel')).filter(
+    (model) => model && model !== embedModel
+  )
   if (others.length > 0) {
     throw new Error(
       `The stored chunks were embedded with ${others.join(', ')}, but EMBED_MODEL is ${embedModel}. ` +
@@ -100,7 +153,10 @@ export async function openVectorIndex(
   }
   if (backend === 'atlas') return new AtlasVectorIndex(chunks)
   const docs = await chunks
-    .find({}, {projection: {docId: 1, title: 1, text: 1, embedding: 1}})
+    .find(
+      {embedding: {$exists: true}},
+      {projection: {docId: 1, title: 1, text: 1, textEn: 1, textBn: 1, filters: 1, embedding: 1}}
+    )
     .toArray()
   return new LocalVectorIndex(
     docs.map((doc) => ({
@@ -108,7 +164,10 @@ export async function openVectorIndex(
       docId: doc.docId,
       title: doc.title,
       text: doc.text,
-      embedding: doc.embedding
+      textEn: doc.textEn,
+      textBn: doc.textBn,
+      filters: doc.filters,
+      embedding: doc.embedding ?? []
     }))
   )
 }

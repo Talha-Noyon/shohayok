@@ -6,11 +6,7 @@ export interface RankedList {
   cosine: boolean
 }
 
-export interface FusedHit {
-  chunkId: string
-  docId: string
-  title: string
-  text: string
+export interface FusedHit extends Omit<Hit, 'score'> {
   /** Reciprocal rank fusion score */
   rrf: number
   /** The best cosine similarity any vector search gave this chunk; null if only keywords found it */
@@ -28,11 +24,14 @@ export function fuse(lists: RankedList[], k = RRF_K): FusedHit[] {
   const fused = new Map<string, FusedHit>()
   for (const list of lists) {
     list.hits.forEach((hit, index) => {
-      const entry = fused.get(hit.chunkId) ?? {
-        chunkId: hit.chunkId,
-        docId: hit.docId,
-        title: hit.title,
-        text: hit.text,
+      const {chunkId, docId, title, text, textEn, textBn} = hit
+      const entry = fused.get(chunkId) ?? {
+        chunkId,
+        docId,
+        title,
+        text,
+        textEn,
+        textBn,
         rrf: 0,
         cosine: null
       }

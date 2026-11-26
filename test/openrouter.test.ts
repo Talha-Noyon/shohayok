@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
-import {OpenRouterClient, OpenRouterError} from '../src/llm/openrouter.js'
+import {isDailyLimit, OpenRouterClient, OpenRouterError} from '../src/llm/openrouter.js'
 import {parseJsonLoose} from '../src/llm/text.js'
 import {json, sse, startFakeServer, type FakeServer} from './helpers/fakeServer.js'
 
@@ -129,6 +129,58 @@ describe('OpenRouterClient', () => {
     expect(calls).toBe(2)
   })
 
+  it('sends a list of models as fallbacks and reports which one answered', async () => {
+    const openrouter = await client({
+      '/api/v1/chat/completions': () =>
+        json({model: 'b:free', choices: [{message: {content: '{"bangla":"ক","english":"k"}'}}]})
+    })
+    const info: {model?: string} = {}
+    await openrouter.chatJson('a:free, b:free', messages, {}, info)
+    expect(fake?.requests[0]?.body).toMatchObject({model: 'a:free', models: ['a:free', 'b:free']})
+    expect(info.model).toBe('b:free')
+  })
+
+  it('reports the model that streamed the answer', async () => {
+    const openrouter = await client({
+      '/api/v1/chat/completions': () => ({
+        pieces: [
+          `data: ${JSON.stringify({model: 'b:free', choices: [{delta: {content: 'Hi'}}]})}\n\n`,
+          'data: [DONE]\n\n'
+        ]
+      })
+    })
+    const info: {model?: string} = {}
+    const pieces: string[] = []
+    for await (const piece of openrouter.chatStream('a:free,b:free', messages, undefined, info)) {
+      pieces.push(piece)
+    }
+    expect(pieces).toEqual(['Hi'])
+    expect(info.model).toBe('b:free')
+    expect(fake?.requests[0]?.body).toMatchObject({models: ['a:free', 'b:free']})
+  })
+
+  it('tells the daily free-model limit apart from other errors', () => {
+    expect(isDailyLimit(new OpenRouterError('Rate limit exceeded: free-models-per-day', 429))).toBe(
+      true
+    )
+    expect(isDailyLimit(new OpenRouterError('Rate limit exceeded: free-models-per-min', 429))).toBe(
+      false
+    )
+    expect(isDailyLimit(new Error('per-day'))).toBe(false)
+  })
+
+  it('retries when a free model fails upstream with a 500', async () => {
+    let calls = 0
+    const openrouter = await client({
+      '/api/v1/embeddings': () =>
+        ++calls === 1
+          ? json({error: {message: 'HTTP 500: service inference failed'}}, 500)
+          : json({data: [{index: 0, embedding: [1]}]})
+    })
+    expect(await openrouter.embed('m', ['a'])).toEqual([[1]])
+    expect(calls).toBe(2)
+  })
+
   it('does not retry the daily free-model limit, and says when it resets', async () => {
     const openrouter = await client({
       '/api/v1/chat/completions': () =>
@@ -136,6 +188,35 @@ describe('OpenRouterClient', () => {
     })
     await expect(openrouter.chatJson('m', messages, {})).rejects.toThrow('resets at midnight UTC')
     expect(fake?.requests).toHaveLength(1)
+  })
+
+  it('names the upstream provider as the cause when its shared pool is busy', async () => {
+    // The shape OpenRouter sent on 2026-11-25 when a free Gemma model was saturated
+    const busy = json(
+      {
+        error: {
+          message: 'Provider returned error',
+          code: 429,
+          metadata: {
+            raw: 'google/gemma-4-31b-it:free is temporarily rate-limited upstream. Please retry shortly, or add your own provider key: https://openrouter.ai/workspaces/default/byok',
+            provider_name: 'Google AI Studio',
+            limit_source: 'upstream_provider_shared_pool'
+          }
+        }
+      },
+      429,
+      {'retry-after': '0'}
+    )
+    const openrouter = await client({'/api/v1/embeddings': () => busy})
+    const failure = await openrouter.embed('m', ['a']).catch((error: unknown) => error)
+    const message = (failure as Error).message
+
+    expect(message).toContain(
+      'Provider returned error (google/gemma-4-31b-it:free is temporarily rate-limited upstream)'
+    )
+    expect(message).toContain('shared upstream capacity is busy, not your key')
+    expect(message).not.toContain('byok')
+    expect(fake?.requests.length).toBeGreaterThan(1) // a busy pool is worth retrying
   })
 
   it('explains a rejected key and a model that needs credits', async () => {
