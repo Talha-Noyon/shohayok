@@ -84,6 +84,20 @@ describe('extractEntities', () => {
     expect(places('লালবাগে ডেলিভারি')).toEqual(['lalbagh'])
   })
 
+  it('tells Tangail the district from Tangail the sharee', () => {
+    expect(extractEntities('tangail sharee er dam koto?')).toMatchObject({
+      places: [],
+      styles: ['tangail']
+    })
+    const district = extractEntities('Tangail e delivery charge koto?')
+    expect(district.places.map((place) => place.key)).toEqual(['tangail'])
+    expect(district.styles).toEqual([])
+    expect(extractEntities('rajshahi silk sharee')).toMatchObject({
+      places: [],
+      styles: ['rajshahi-silk']
+    })
+  })
+
   it('reads nothing into a plain question', () => {
     expect(extractEntities('What is your return policy?')).toEqual({
       places: [],

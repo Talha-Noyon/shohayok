@@ -53,6 +53,15 @@ function build(result: ToolResult, lang: Lang): Reply {
       return {text: callbackText(result, lang), sources: []}
     case 'smalltalk':
       return {text: smalltalkText(result.kind, lang), sources: []}
+    case 'clarify':
+      return {
+        text: pick(lang, {
+          en: 'Which one do you mean? Send its number from the list, like "the second one".',
+          bn: 'কোনটার কথা বলছেন? তালিকার নম্বর দিয়ে বলুন, যেমন "দ্বিতীয়টা"।',
+          banglish: 'Kontar kotha bolchen? List er number diye bolun, jemon "2nd ta".'
+        }),
+        sources: []
+      }
   }
 }
 

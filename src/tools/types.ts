@@ -39,6 +39,7 @@ export type ToolName =
   | 'product_info'
   | 'request_callback'
   | 'smalltalk'
+  | 'clarify'
 
 export type ToolResult =
   | {tool: 'order_status'; outcome: 'found'; order: Order}
@@ -64,3 +65,4 @@ export type ToolResult =
   | {tool: 'request_callback'; outcome: 'saved'; ticket: string; phone: string}
   | {tool: 'request_callback'; outcome: 'missing'}
   | {tool: 'smalltalk'; kind: 'greeting' | 'thanks'}
+  | {tool: 'clarify'}

@@ -141,6 +141,22 @@ function readPrices(text: string): {minPrice?: number; maxPrice?: number} {
   }
 }
 
+/**
+ * Tangail is a district and a sharee; Rajshahi silk names a district too. With a product word in
+ * the message it is the sharee, without one it is the place. A multi-word style always wins.
+ */
+function resolvePlaceNamedStyles(entities: Entities): void {
+  for (const place of [...entities.places]) {
+    const sameName = entities.styles.includes(place.key)
+    const insideStyleName = entities.styles.some((style) => style.startsWith(`${place.key}-`))
+    if (insideStyleName || (sameName && entities.categories.length > 0)) {
+      entities.places = entities.places.filter((item) => item !== place)
+    } else if (sameName) {
+      entities.styles = entities.styles.filter((style) => style !== place.key)
+    }
+  }
+}
+
 export function extractEntities(text: string): Entities {
   let normal = normalize(text)
   const entities: Entities = {
@@ -175,6 +191,7 @@ export function extractEntities(text: string): Entities {
   entities.categories = matchTerms(tokens, CATEGORIES).map((term) => term.key)
   entities.styles = matchTerms(tokens, MATCHABLE_STYLES).map((term) => term.key)
   entities.collections = matchTerms(tokens, COLLECTIONS).map((term) => term.key)
+  resolvePlaceNamedStyles(entities)
   entities.sizes = readSizes(normal)
   Object.assign(entities, readPrices(normal))
 
