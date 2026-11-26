@@ -1,5 +1,5 @@
 import type {Lang} from '../lang/detect.js'
-import {toBengaliDigits} from '../lang/digits.js'
+import {toAsciiDigits, toBengaliDigits} from '../lang/digits.js'
 import type {Place} from './places.js'
 import {COLORS, termOf} from './vocab.js'
 
@@ -68,6 +68,16 @@ export function dateLabel(iso: string, lang: Lang): string {
 /** "010•••••678": enough to recognise the number, not enough to copy it */
 export function maskPhone(phone: string): string {
   return `${phone.slice(0, 3)}•••••${phone.slice(-3)}`
+}
+
+const PHONE_IN_TEXT =
+  /(?<![0-9০-৯])(?:\+?(?:88|৮৮)[\s-]?)?(?:01|০১)[0-9০-৯](?:[\s-]?[0-9০-৯]){8}(?![0-9০-৯])/g
+
+/** Masks every Bangladeshi mobile number in a text, in either kind of digits */
+export function maskPhones(text: string): string {
+  return text.replace(PHONE_IN_TEXT, (match) =>
+    maskPhone(toAsciiDigits(match).replace(/\D/g, '').slice(-11))
+  )
 }
 
 function endsInVowel(word: string): boolean {

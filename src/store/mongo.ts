@@ -78,6 +78,7 @@ export async function ensureIndexes(store: Store): Promise<void> {
   await store.products.createIndex({category: 1, price: 1})
   await store.usage.createIndex({expiresAt: 1}, {expireAfterSeconds: 0})
   await store.caches.createIndex({expiresAt: 1}, {expireAfterSeconds: 0})
+  await store.db.collection('conversations').createIndex({expiresAt: 1}, {expireAfterSeconds: 0})
 }
 
 /** Swaps a collection's contents for new documents */

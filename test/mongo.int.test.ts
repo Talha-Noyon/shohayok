@@ -15,10 +15,12 @@ import {createServices, type Services} from '../src/services.js'
 import {loadOrders, loadPolicies, loadProducts} from '../src/shop/schema.js'
 import {MongoCache} from '../src/cache/cache.js'
 import {MongoCounter} from '../src/limits/counter.js'
+import {MongoConversations} from '../src/store/conversations.js'
 import {MongoShopData} from '../src/store/shopData.js'
 import {memoryShop} from '../src/tools/memoryShop.js'
 import type {ProductQuery} from '../src/tools/types.js'
 import {openStore, openVectorIndex, upsertChunks, type Store} from '../src/store/mongo.js'
+import {conversationContract} from './helpers/conversationContract.js'
 import {hashEmbed} from './helpers/hashEmbed.js'
 import {json, sse, startFakeServer, type FakeServer} from './helpers/fakeServer.js'
 import {listen, postChat, readEvents} from './helpers/http.js'
@@ -126,6 +128,10 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
     expect(await cache.get('embed:test')).toEqual([1, 2])
     now += 61_000
     expect(await cache.get('embed:test')).toBeUndefined()
+  })
+
+  describe('MongoConversations', () => {
+    conversationContract(async () => new MongoConversations(store.db.collection('conversations')))
   })
 
   it('filters keyword search by category', async () => {
