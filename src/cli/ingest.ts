@@ -52,7 +52,13 @@ await runCli(async () => {
       embedModel: model,
       onProgress: (done, total) => process.stdout.write(`\rEmbedded ${done}/${total}`)
     })
-    if (embed) console.log(` in ${(msSince(started) / 1000).toFixed(1)} s`)
+    if (embed) {
+      console.log(
+        `
+Embedded ${result.embedded} chunks and kept ${result.reused} unchanged vectors ` +
+          `in ${(msSince(started) / 1000).toFixed(1)} s`
+      )
+    }
     console.log(
       `Stored ${result.products} products, ${result.orders} orders and ${result.chunks} chunks, ` +
         `and removed ${result.removed} old chunks`

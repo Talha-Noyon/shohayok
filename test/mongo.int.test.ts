@@ -192,6 +192,31 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
     expect(await store.chunks.countDocuments()).toBe(CHUNK_COUNT)
   })
 
+  it('embeds again only the chunks whose text or model changed', async () => {
+    const sent: string[] = []
+    const embed = async (texts: string[]) => {
+      sent.push(...texts)
+      return texts.map((text) => hashEmbed(text))
+    }
+    const first = await ingestShop(store, {embed, embedModel: 'hash-test'})
+    expect(sent).toEqual([])
+    expect(first).toMatchObject({embedded: 0, reused: CHUNK_COUNT})
+
+    await store.chunks.updateOne({_id: 'P001#0'}, {$set: {text: 'an older text'}})
+    const second = await ingestShop(store, {embed, embedModel: 'hash-test'})
+    expect(sent).toHaveLength(1)
+    expect(sent[0]).toContain('Ketoki')
+    expect(second).toMatchObject({embedded: 1, reused: CHUNK_COUNT - 1})
+    const stored = await store.chunks.findOne({_id: 'P001#0'})
+    expect(stored?.text).toBe(sent[0])
+    expect(stored?.embedding).toEqual(hashEmbed(sent[0] ?? ''))
+
+    sent.length = 0
+    const other = await ingestShop(store, {embed, embedModel: 'hash-other'})
+    expect(other).toMatchObject({embedded: CHUNK_COUNT, reused: 0})
+    await ingestShop(store, {embed, embedModel: 'hash-test'})
+  })
+
   it('finds Bengali words through the $text index', async () => {
     const hits = await keywordSearch(store.chunks, 'কেতকী জামদানি শাড়ির দাম কত?', 3)
     expect(hits[0]?.docId).toBe('P001')
