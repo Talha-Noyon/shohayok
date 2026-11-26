@@ -5,6 +5,7 @@ import {afterAll, beforeAll, describe, expect, it} from 'vitest'
 
 import type {Config} from '../src/config.js'
 import {policyChunk, productChunk} from '../src/ingest/chunk.js'
+import {ingestShop} from '../src/ingest/ingest.js'
 import type {ProviderName} from '../src/llm/types.js'
 import {answerQuestion} from '../src/rag/pipeline.js'
 import {keywordSearch} from '../src/retrieval/keyword.js'
@@ -12,13 +13,7 @@ import {Retriever} from '../src/retrieval/retriever.js'
 import {createApp} from '../src/server/app.js'
 import {createServices, type Services} from '../src/services.js'
 import {loadPolicies, loadProducts} from '../src/shop/schema.js'
-import {
-  ensureTextIndex,
-  openStore,
-  openVectorIndex,
-  upsertChunks,
-  type Store
-} from '../src/store/mongo.js'
+import {openStore, openVectorIndex, upsertChunks, type Store} from '../src/store/mongo.js'
 import {hashEmbed} from './helpers/hashEmbed.js'
 import {json, sse, startFakeServer, type FakeServer} from './helpers/fakeServer.js'
 import {listen, postChat, readEvents} from './helpers/http.js'
@@ -50,15 +45,64 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
 
   beforeAll(async () => {
     store = await openStore(MONGO_URI, DB)
-    const chunks = await allChunks()
-    const rows = chunks.map((chunk) => ({chunk, embedding: hashEmbed(chunk.text)}))
-    await upsertChunks(store.chunks, rows, 'hash-test')
-    await ensureTextIndex(store.chunks)
+    await ingestShop(store, {
+      embed: async (texts) => texts.map((text) => hashEmbed(text)),
+      embedModel: 'hash-test'
+    })
   })
 
   afterAll(async () => {
     await store?.client.db(DB).dropDatabase()
     await store?.close()
+  })
+
+  it('stores the products, and the orders with their dates moved up to now', async () => {
+    expect(await store.products.countDocuments()).toBe(500)
+    expect(await store.orders.countDocuments()).toBe(300)
+    const newest = await store.orders.find().sort({placedAt: -1}).limit(1).next()
+    const placed = Date.parse(newest?.placedAt ?? '')
+    expect(placed).toBeLessThanOrEqual(Date.now())
+    expect(placed).toBeGreaterThan(Date.now() - 3 * 86_400_000)
+  })
+
+  it('filters keyword search by category', async () => {
+    const hits = await keywordSearch(store.chunks, 'ketoki', 10, {
+      type: 'product',
+      category: 'panjabi'
+    })
+    expect(hits.length).toBeGreaterThan(0)
+    const panjabis = await store.products.distinct('_id', {category: 'panjabi'})
+    for (const hit of hits) expect(panjabis).toContain(hit.docId)
+  })
+
+  it('filters vector search the same way', async () => {
+    const index = await openVectorIndex(store.chunks, 'local', 'hash-test')
+    const hits = await index.search(hashEmbed('warm shawl for winter'), 5, {
+      type: 'product',
+      category: 'shawl',
+      maxPrice: 3000
+    })
+    expect(hits.length).toBeGreaterThan(0)
+    const cheapShawls = await store.products.distinct('_id', {
+      category: 'shawl',
+      price: {$lte: 3000}
+    })
+    for (const hit of hits) expect(cheapShawls).toContain(hit.docId)
+  })
+
+  it('stores chunks without vectors offline, for keyword search alone', async () => {
+    const offline = await openStore(MONGO_URI, `${DB}_offline`)
+    try {
+      await ingestShop(offline)
+      expect(await offline.chunks.countDocuments({embedding: {$exists: true}})).toBe(0)
+      const hits = await keywordSearch(offline.chunks, 'জামদানি', 3)
+      expect(hits[0]?.docId).toMatch(/^P\d{3}$/)
+      const index = await openVectorIndex(offline.chunks, 'local', 'any-model')
+      expect(await index.search([1, 0], 3)).toEqual([])
+    } finally {
+      await offline.client.db(`${DB}_offline`).dropDatabase()
+      await offline.close()
+    }
   })
 
   it('stores every chunk once and removes chunks that left the data', async () => {

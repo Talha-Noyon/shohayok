@@ -13,6 +13,8 @@ const fused = (docId: string, cosine: number): FusedHit => ({
   docId,
   title: `Title of ${docId}`,
   text: `Text of ${docId}`,
+  textEn: `Text of ${docId}`,
+  textBn: `Text of ${docId}`,
   rrf: 0.03,
   cosine
 })
