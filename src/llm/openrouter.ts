@@ -199,23 +199,47 @@ const HINTS: Record<number, string> = {
   402: 'This model needs credits. Add credits on openrouter.ai, or choose a model whose id ends in :free.'
 }
 
+interface ErrorBody {
+  error?: {message?: string; metadata?: {raw?: unknown; limit_source?: unknown}}
+}
+
 async function toError(response: Response): Promise<OpenRouterError> {
   const text = await response.text()
   let message = text || response.statusText
+  // "Provider returned error" says little: the upstream provider's own reason is in metadata
+  let detail = ''
+  let upstream = false
   try {
-    message = (JSON.parse(text) as {error?: {message?: string}}).error?.message ?? message
+    const {error} = JSON.parse(text) as ErrorBody
+    message = error?.message ?? message
+    if (typeof error?.metadata?.raw === 'string') detail = error.metadata.raw
+    upstream =
+      (typeof error?.metadata?.limit_source === 'string' &&
+        error.metadata.limit_source.startsWith('upstream')) ||
+      /rate-limited upstream/i.test(detail)
   } catch {
     // not JSON: keep the raw text
   }
   message = message.trim().replace(/\.$/, '')
+  // The detail can end with a long link to OpenRouter's own-key settings; one sentence is enough
+  detail = detail.split(/(?<=\.)\s/)[0]?.trim() ?? ''
+
   let hint = HINTS[response.status]
   if (response.status === 429) {
-    hint = DAILY_LIMIT.test(message)
-      ? 'The daily limit on free models is used up. It resets at midnight UTC, and buying $10 of credits raises it.'
-      : 'OpenRouter is limiting requests from this key. Wait a minute and try again.'
+    if (DAILY_LIMIT.test(message)) {
+      hint =
+        'The daily limit on free models is used up. It resets at midnight UTC, and buying $10 of credits raises it.'
+    } else if (upstream) {
+      hint =
+        "This free model's shared upstream capacity is busy, not your key. Retry later, or set CHAT_MODEL to another :free model."
+    } else {
+      hint = 'OpenRouter is limiting requests from this key. Wait a minute and try again.'
+    }
   }
+  const reason =
+    detail && detail !== message ? `${message} (${detail.replace(/\.$/, '')})` : message
   return new OpenRouterError(
-    `OpenRouter ${response.status}: ${message}.${hint ? ` ${hint}` : ''}`,
+    `OpenRouter ${response.status}: ${reason}.${hint ? ` ${hint}` : ''}`,
     response.status
   )
 }

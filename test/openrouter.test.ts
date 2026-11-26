@@ -138,6 +138,35 @@ describe('OpenRouterClient', () => {
     expect(fake?.requests).toHaveLength(1)
   })
 
+  it('names the upstream provider as the cause when its shared pool is busy', async () => {
+    // The shape OpenRouter sent on 2026-11-25 when a free Gemma model was saturated
+    const busy = json(
+      {
+        error: {
+          message: 'Provider returned error',
+          code: 429,
+          metadata: {
+            raw: 'google/gemma-4-31b-it:free is temporarily rate-limited upstream. Please retry shortly, or add your own provider key: https://openrouter.ai/workspaces/default/byok',
+            provider_name: 'Google AI Studio',
+            limit_source: 'upstream_provider_shared_pool'
+          }
+        }
+      },
+      429,
+      {'retry-after': '0'}
+    )
+    const openrouter = await client({'/api/v1/embeddings': () => busy})
+    const failure = await openrouter.embed('m', ['a']).catch((error: unknown) => error)
+    const message = (failure as Error).message
+
+    expect(message).toContain(
+      'Provider returned error (google/gemma-4-31b-it:free is temporarily rate-limited upstream)'
+    )
+    expect(message).toContain('shared upstream capacity is busy, not your key')
+    expect(message).not.toContain('byok')
+    expect(fake?.requests.length).toBeGreaterThan(1) // a busy pool is worth retrying
+  })
+
   it('explains a rejected key and a model that needs credits', async () => {
     const openrouter = await client({
       '/api/v1/key': () => json({error: {message: 'No auth credentials found', code: 401}}, 401),
