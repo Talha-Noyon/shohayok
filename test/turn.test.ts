@@ -179,6 +179,17 @@ describe('runTurn', () => {
     })
   })
 
+  it('does not let the rewrite of a first message name a product the customer did not', async () => {
+    const {talk} = setup({
+      vector: () => [hitOf('F15', 0.1)],
+      rewrite: () => ({bangla: 'কেতকী বিদেশে পাঠানো যায়?', english: 'Can Ketoki be sent abroad?'})
+    })
+    const turn = await talk('bidesh e pathano jay?')
+    expect(turn.trace.route).toMatchObject({kind: 'answer'})
+    expect(turn.trace).toMatchObject({decision: 'handoff', rewrite: {ok: true}})
+    expect(turn.trace.search?.queries).toContain('Can Ketoki be sent abroad?')
+  })
+
   it('offers a callback instead of guessing, and takes the phone number next', async () => {
     const {talk, deps} = setup({vector: () => [hitOf('F12', 0.05)]})
     const unsure = await talk('Do you sell iPhone chargers?')

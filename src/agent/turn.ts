@@ -260,6 +260,10 @@ export async function* runTurn(input: TurnInput, deps: AgentDeps): AsyncGenerato
     const found = extractEntities(text)
     const again = route(text, found, detectIntents(text, found), state)
     if (again.kind !== 'tool' || again.tool === 'smalltalk' || again.tool === 'clarify') return
+    // A product can only come from the conversation: on a first message, one the rewrite
+    // names is the model's invention ("bidesh e pathano jay?" became a question about Ketoki)
+    const productTools = ['check_stock', 'product_info', 'list_products']
+    if (history.length === 0 && productTools.includes(again.tool)) return
     const rerouted = {...again, reason: `after a rewrite: ${again.reason}`}
     trace.route = routeSummary(rerouted)
     return rerouted
