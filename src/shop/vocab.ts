@@ -11,17 +11,20 @@ export interface Term {
   spellings: string[]
 }
 
-export type CategoryKey =
-  | 'sharee'
-  | 'panjabi'
-  | 'three-piece'
-  | 'kurti'
-  | 'fatua'
-  | 'kids'
-  | 'lungi'
-  | 'orna'
-  | 'shawl'
-  | 'gamcha'
+export const CATEGORY_KEYS = [
+  'sharee',
+  'panjabi',
+  'three-piece',
+  'kurti',
+  'fatua',
+  'kids',
+  'lungi',
+  'orna',
+  'shawl',
+  'gamcha'
+] as const
+
+export type CategoryKey = (typeof CATEGORY_KEYS)[number]
 
 export type SizeSystem = 'free' | 'chest' | 'letter' | 'age'
 
@@ -402,14 +405,22 @@ export const COLLECTIONS: readonly Term[] = [
   {key: 'sonalu', en: 'Sonalu', bn: 'সোনালু', spellings: []}
 ]
 
-export const OCCASIONS: readonly {key: string; en: string; bn: string}[] = [
-  {key: 'eid', en: 'Eid', bn: 'ঈদ'},
-  {key: 'boishakh', en: 'Pohela Boishakh', bn: 'পহেলা বৈশাখ'},
-  {key: 'wedding', en: 'weddings', bn: 'বিয়ে'},
-  {key: 'puja', en: 'Puja', bn: 'পূজা'},
-  {key: 'office', en: 'the office', bn: 'অফিস'},
-  {key: 'daily', en: 'everyday wear', bn: 'প্রতিদিনের ব্যবহার'},
-  {key: 'winter', en: 'winter', bn: 'শীত'}
+export interface Occasion {
+  key: string
+  en: string
+  bn: string
+  /** The Bengali word as "at" or "for" the occasion, as in "ঈদে পরার মতো" */
+  bnAt: string
+}
+
+export const OCCASIONS: readonly Occasion[] = [
+  {key: 'eid', en: 'Eid', bn: 'ঈদ', bnAt: 'ঈদে'},
+  {key: 'boishakh', en: 'Pohela Boishakh', bn: 'পহেলা বৈশাখ', bnAt: 'পহেলা বৈশাখে'},
+  {key: 'wedding', en: 'weddings', bn: 'বিয়ে', bnAt: 'বিয়েতে'},
+  {key: 'puja', en: 'Puja', bn: 'পূজা', bnAt: 'পূজায়'},
+  {key: 'office', en: 'the office', bn: 'অফিস', bnAt: 'অফিসে'},
+  {key: 'daily', en: 'everyday wear', bn: 'প্রতিদিন', bnAt: 'প্রতিদিন'},
+  {key: 'winter', en: 'winter', bn: 'শীত', bnAt: 'শীতে'}
 ]
 
 export function categoryOf(key: string): Category {
