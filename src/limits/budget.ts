@@ -1,4 +1,7 @@
+import type {Quota} from '../shared/api.js'
 import type {Counter} from './counter.js'
+
+export type {Quota}
 
 export interface BudgetConfig {
   /** Model requests the whole demo may make per UTC day */
@@ -7,17 +10,6 @@ export interface BudgetConfig {
   visitorLimit: number
   /** Off for local models, which cost nothing */
   enabled: boolean
-}
-
-export interface Quota {
-  /** False for local models: nothing is counted */
-  enabled: boolean
-  used: number
-  limit: number
-  visitorUsed: number
-  visitorLimit: number
-  /** When the free models' daily allowance starts again: midnight UTC */
-  resetsAt: string
 }
 
 const DAY = 86_400_000

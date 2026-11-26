@@ -23,18 +23,10 @@ import {buildAnswerMessages, type HistoryTurn, type PromptDoc} from './prompt.js
 import {rewriteQuestion, type Rewrite} from './rewrite.js'
 import {route, type ProductRef, type Route} from './route.js'
 import {applyResult, type ConversationState} from './state.js'
+import type {Source, TurnEvent} from '../shared/api.js'
 import {traceEntities, type Trace} from './trace.js'
 
-export interface Source {
-  docId: string
-  /** "English / বাংলা" */
-  title: string
-}
-
-export type TurnEvent =
-  | {type: 'meta'; conversationId: string; lang: Lang; route: Trace['route']; sources: Source[]}
-  | {type: 'token'; text: string}
-  | {type: 'done'; answer: string; trace: Trace}
+export type {Source, TurnEvent} from '../shared/api.js'
 
 export interface CachedAnswer {
   text: string

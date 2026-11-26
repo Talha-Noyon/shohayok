@@ -5,13 +5,14 @@ import express from 'express'
 import {z} from 'zod'
 
 import type {TurnEvent, TurnInput} from '../agent/turn.js'
+import type {StreamEvent} from '../shared/api.js'
 import type {Quota} from '../limits/budget.js'
 import type {Conversation} from '../store/conversations.js'
 
 /** The built React app. Vercel serves it from its CDN; locally Express does. */
 export const WEB_DIR = fileURLToPath(new URL('../../dist/web', import.meta.url))
 
-export type StreamEvent = TurnEvent | {type: 'error'; message: string}
+export type {StreamEvent}
 
 export interface AppDeps {
   turn(input: TurnInput): AsyncIterable<TurnEvent>

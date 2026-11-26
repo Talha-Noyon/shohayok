@@ -1,4 +1,6 @@
-export type Lang = 'bn' | 'banglish' | 'en'
+import type {Lang, LanguageEvidence} from '../shared/api.js'
+
+export type {Lang, LanguageEvidence}
 
 const BENGALI_CHAR = /[ঀ-৿]/g
 const LATIN_CHAR = /[A-Za-z]/g
@@ -36,14 +38,6 @@ const BANGLISH_SHARE = 0.3
  */
 export function detectLanguage(text: string): Lang {
   return explainLanguage(text).lang
-}
-
-export interface LanguageEvidence {
-  lang: Lang
-  /** Share of letters in Bengali script, from 0 to 1 */
-  bengaliShare: number
-  /** The Banglish words found, in order */
-  banglishWords: string[]
 }
 
 /** The language, and why: what the inspector shows */
