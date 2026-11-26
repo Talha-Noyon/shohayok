@@ -12,7 +12,10 @@ import {keywordSearch} from '../src/retrieval/keyword.js'
 import {Retriever} from '../src/retrieval/retriever.js'
 import {createApp} from '../src/server/app.js'
 import {createServices, type Services} from '../src/services.js'
-import {loadPolicies, loadProducts} from '../src/shop/schema.js'
+import {loadOrders, loadPolicies, loadProducts} from '../src/shop/schema.js'
+import {MongoShopData} from '../src/store/shopData.js'
+import {memoryShop} from '../src/tools/memoryShop.js'
+import type {ProductQuery} from '../src/tools/types.js'
 import {openStore, openVectorIndex, upsertChunks, type Store} from '../src/store/mongo.js'
 import {hashEmbed} from './helpers/hashEmbed.js'
 import {json, sse, startFakeServer, type FakeServer} from './helpers/fakeServer.js'
@@ -63,6 +66,43 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
     const placed = Date.parse(newest?.placedAt ?? '')
     expect(placed).toBeLessThanOrEqual(Date.now())
     expect(placed).toBeGreaterThan(Date.now() - 3 * 86_400_000)
+  })
+
+  it('finds the same products as the in-memory shop, cheapest first', async () => {
+    const mongo = new MongoShopData(store)
+    const memory = memoryShop(await loadProducts(), await loadOrders())
+    const queries: ProductQuery[] = [
+      {category: 'sharee', colors: ['red'], maxPrice: 3000},
+      {styles: ['silk', 'linen'], minPrice: 3000},
+      {collection: 'ketoki'},
+      {category: 'kids', size: '4-5Y'},
+      {category: 'shawl', maxPrice: 100}
+    ]
+    for (const query of queries) {
+      const [fromMongo, fromMemory] = await Promise.all([
+        mongo.findProducts(query, 4),
+        memory.findProducts(query, 4)
+      ])
+      expect(fromMongo.total, JSON.stringify(query)).toBe(fromMemory.total)
+      expect(fromMongo.items.map((item) => item.id)).toEqual(
+        fromMemory.items.map((item) => item.id)
+      )
+    }
+  })
+
+  it('looks up orders and products, and saves callback requests', async () => {
+    const mongo = new MongoShopData(store)
+    expect((await mongo.findOrder('NDI-10299'))?.phone).toBe('01000000002')
+    expect(await mongo.findOrder('NDI-99999')).toBeNull()
+    expect((await mongo.getProducts(['P002', 'P001'])).map((product) => product.id)).toEqual([
+      'P002',
+      'P001'
+    ])
+    const ticket = await mongo.saveCallback({phone: '01000000009', question: 'call me'})
+    expect(await store.db.collection('callbacks').findOne({_id: ticket as never})).toMatchObject({
+      phone: '01000000009',
+      status: 'open'
+    })
   })
 
   it('filters keyword search by category', async () => {
