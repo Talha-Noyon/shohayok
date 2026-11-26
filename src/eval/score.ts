@@ -43,6 +43,9 @@ export interface CaseResult {
   /** The best cosine of the last search, or null when none ran */
   confidence: number | null
   rewritten: boolean
+  /** The rule that routed the message, and the rewrite's English when there was one */
+  reason: string
+  rewrite?: string
   /** Model requests of the last message alone */
   requests: {embed: number; chat: number}
   conversationRequests: {embed: number; chat: number}
@@ -103,7 +106,8 @@ export function scoreCase(
   const langOk = replyLang === item.lang
 
   let rank: number | null | undefined
-  if (checked && searchDecides && expect.docs.length > 0) {
+  // An answer about the product just shown reads that product: no search to rank
+  if (checked && searchDecides && expect.docs.length > 0 && trace.search) {
     const ranked = [...new Set((trace.search?.hits ?? []).map((hit) => hit.docId))]
     rank = firstRelevantRank(ranked, expect.docs)
   }
@@ -133,6 +137,8 @@ export function scoreCase(
     ...(rank !== undefined && {rank}),
     confidence: trace.search?.confidence ?? null,
     rewritten: trace.rewrite !== undefined,
+    reason: trace.route.reason,
+    ...(trace.rewrite?.english && {rewrite: trace.rewrite.english}),
     requests: trace.modelRequests,
     conversationRequests: run.requests,
     totalMs: trace.totalMs,

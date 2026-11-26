@@ -118,6 +118,7 @@ const result = (over: Partial<CaseResult>): CaseResult => ({
   replyLang: 'en',
   confidence: null,
   rewritten: false,
+  reason: 'r',
   requests: {embed: 0, chat: 0},
   conversationRequests: {embed: 0, chat: 0},
   totalMs: 300,

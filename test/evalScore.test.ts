@@ -113,7 +113,7 @@ describe('scoreCase', () => {
     const trace = baseTrace({
       route: {kind: 'answer', reason: 'r'},
       decision: 'answer',
-      rewrite: {ok: true, ms: 3},
+      rewrite: {ok: true, ms: 3, english: 'Can I return it?'},
       search: {
         queries: ['q'],
         hits: [hit('F06', 0.5), hit('F06', 0.4), hit('F05', 0.3)],
@@ -126,6 +126,7 @@ describe('scoreCase', () => {
     })
     const result = scoreCase(item, run('Returns within 7 days [F05]', trace), 'online')
     expect(result).toMatchObject({rank: 2, confidence: 0.5, rewritten: true, routeOk: true})
+    expect(result).toMatchObject({reason: 'r', rewrite: 'Can I return it?'})
   })
 
   it('takes either an answer or a handoff when the case expects search', () => {
@@ -152,9 +153,26 @@ describe('scoreCase', () => {
     expect(scoreCase(item, run('Delivery costs Tk 130.', answered), 'online').langOk).toBe(false)
   })
 
+  it('does not rank an answer that came from the product just shown, with no search', () => {
+    const item = caseOf({kind: 'followup'}, {route: 'answer', docs: ['P001']})
+    const trace = baseTrace({route: {kind: 'answer', reason: 'r'}, decision: 'answer'})
+    expect(scoreCase(item, run('Dry clean only. [P001]', trace), 'online')).not.toHaveProperty(
+      'rank'
+    )
+  })
+
   it('online, a handoff where an answer was expected fails the route', () => {
     const item = caseOf({kind: 'answer'}, {route: 'answer', docs: ['F05']})
-    const trace = baseTrace({route: {kind: 'answer', reason: 'r'}, decision: 'handoff'})
+    const search = {
+      queries: ['q'],
+      hits: [{docId: 'F11', title: 'F11', cosine: 0.1, rrf: 0}],
+      confidence: 0.1,
+      threshold: 0.25,
+      keywordOnly: false,
+      embedMs: 1,
+      searchMs: 1
+    }
+    const trace = baseTrace({route: {kind: 'answer', reason: 'r'}, decision: 'handoff', search})
     const result = scoreCase(item, run('Shall someone call you?', trace), 'online')
     expect(result).toMatchObject({routeOk: false, actual: 'handoff', rank: null})
   })
