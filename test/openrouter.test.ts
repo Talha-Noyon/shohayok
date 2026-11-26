@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
-import {OpenRouterClient, OpenRouterError} from '../src/llm/openrouter.js'
+import {isDailyLimit, OpenRouterClient, OpenRouterError} from '../src/llm/openrouter.js'
 import {parseJsonLoose} from '../src/llm/text.js'
 import {json, sse, startFakeServer, type FakeServer} from './helpers/fakeServer.js'
 
@@ -127,6 +127,46 @@ describe('OpenRouterClient', () => {
     })
     expect(await openrouter.embed('m', ['a'])).toEqual([[1]])
     expect(calls).toBe(2)
+  })
+
+  it('sends a list of models as fallbacks and reports which one answered', async () => {
+    const openrouter = await client({
+      '/api/v1/chat/completions': () =>
+        json({model: 'b:free', choices: [{message: {content: '{"bangla":"ক","english":"k"}'}}]})
+    })
+    const info: {model?: string} = {}
+    await openrouter.chatJson('a:free, b:free', messages, {}, info)
+    expect(fake?.requests[0]?.body).toMatchObject({model: 'a:free', models: ['a:free', 'b:free']})
+    expect(info.model).toBe('b:free')
+  })
+
+  it('reports the model that streamed the answer', async () => {
+    const openrouter = await client({
+      '/api/v1/chat/completions': () => ({
+        pieces: [
+          `data: ${JSON.stringify({model: 'b:free', choices: [{delta: {content: 'Hi'}}]})}\n\n`,
+          'data: [DONE]\n\n'
+        ]
+      })
+    })
+    const info: {model?: string} = {}
+    const pieces: string[] = []
+    for await (const piece of openrouter.chatStream('a:free,b:free', messages, undefined, info)) {
+      pieces.push(piece)
+    }
+    expect(pieces).toEqual(['Hi'])
+    expect(info.model).toBe('b:free')
+    expect(fake?.requests[0]?.body).toMatchObject({models: ['a:free', 'b:free']})
+  })
+
+  it('tells the daily free-model limit apart from other errors', () => {
+    expect(isDailyLimit(new OpenRouterError('Rate limit exceeded: free-models-per-day', 429))).toBe(
+      true
+    )
+    expect(isDailyLimit(new OpenRouterError('Rate limit exceeded: free-models-per-min', 429))).toBe(
+      false
+    )
+    expect(isDailyLimit(new Error('per-day'))).toBe(false)
   })
 
   it('retries when a free model fails upstream with a 500', async () => {
