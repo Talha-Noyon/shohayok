@@ -8,10 +8,21 @@ import type {ProviderName} from './llm/types.js'
 
 const Provider = z.enum(['ollama', 'openrouter'])
 
-/** Defaults per provider, chosen for one 12 GB GPU locally and for free models on OpenRouter */
-export const DEFAULT_MODELS: Record<ProviderName, {embed: string; chat: string}> = {
-  ollama: {embed: 'bge-m3', chat: 'gemma3:12b'},
-  openrouter: {embed: 'baai/bge-m3', chat: 'google/gemma-4-31b-it:free'}
+/**
+ * Defaults per provider: one 12 GB GPU locally, and only free models on OpenRouter. A paid model
+ * on an account with no credit pushes the balance below zero, which blocks the free models too.
+ */
+export const DEFAULT_MODELS: Record<
+  ProviderName,
+  {embed: string; chat: string; handoffThreshold: number}
+> = {
+  // Each embedding model spreads cosine similarity differently, so the threshold goes with it
+  ollama: {embed: 'bge-m3', chat: 'gemma3:12b', handoffThreshold: 0.5},
+  openrouter: {
+    embed: 'nvidia/nemotron-3.5-embed-1b:free',
+    chat: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+    handoffThreshold: 0.25
+  }
 }
 
 const EnvSchema = z
@@ -28,7 +39,7 @@ const EnvSchema = z
     CHAT_MODEL: z.string().min(1).optional(),
     REWRITE_MODEL: z.string().min(1).optional(),
     VECTOR_BACKEND: z.enum(['auto', 'atlas', 'local']).default('auto'),
-    HANDOFF_THRESHOLD: z.coerce.number().min(-1).max(1).default(0.5),
+    HANDOFF_THRESHOLD: z.coerce.number().min(-1).max(1).optional(),
     TOP_K: z.coerce.number().int().min(1).max(20).default(4),
     PORT: z.coerce.number().int().min(1).max(65535).default(3000)
   })
@@ -121,7 +132,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     chatModel,
     rewriteModel: parsed.REWRITE_MODEL ?? chatModel,
     vectorBackend: parsed.VECTOR_BACKEND,
-    handoffThreshold: parsed.HANDOFF_THRESHOLD,
+    handoffThreshold: parsed.HANDOFF_THRESHOLD ?? DEFAULT_MODELS[embedProvider].handoffThreshold,
     topK: parsed.TOP_K,
     port: parsed.PORT
   }

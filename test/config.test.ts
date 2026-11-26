@@ -30,10 +30,20 @@ describe('loadConfig', () => {
       chatProvider: 'openrouter',
       embedProvider: 'openrouter',
       openRouterKey: 'sk-or-test',
-      embedModel: 'baai/bge-m3',
-      chatModel: 'google/gemma-4-31b-it:free',
-      rewriteModel: 'google/gemma-4-31b-it:free'
+      embedModel: 'nvidia/nemotron-3.5-embed-1b:free',
+      chatModel: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+      rewriteModel: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+      handoffThreshold: 0.25
     })
+  })
+
+  it('keeps a handoff threshold that was set, whatever the embedding model', () => {
+    const config = loadConfig({
+      LLM_PROVIDER: 'openrouter',
+      OPENROUTER_API_KEY: 'sk-or-test',
+      HANDOFF_THRESHOLD: '0.4'
+    })
+    expect(config.handoffThreshold).toBe(0.4)
   })
 
   it('can take answers from OpenRouter and embeddings from Ollama', () => {
@@ -46,7 +56,8 @@ describe('loadConfig', () => {
       chatProvider: 'openrouter',
       embedProvider: 'ollama',
       embedModel: 'bge-m3',
-      chatModel: 'google/gemma-4-31b-it:free'
+      chatModel: 'nvidia/nemotron-3-ultra-550b-a55b:free',
+      handoffThreshold: 0.5
     })
   })
 

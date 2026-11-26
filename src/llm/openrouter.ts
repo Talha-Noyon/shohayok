@@ -189,9 +189,10 @@ export class OpenRouterClient implements LlmProvider {
   }
 }
 
+/** Free models also fail now and then with a plain 500, "service inference failed" */
 function isRetryable(error: OpenRouterError): boolean {
   if (error.status === 429) return !DAILY_LIMIT.test(error.message)
-  return error.status === 502 || error.status === 503
+  return error.status === 500 || error.status === 502 || error.status === 503
 }
 
 const HINTS: Record<number, string> = {

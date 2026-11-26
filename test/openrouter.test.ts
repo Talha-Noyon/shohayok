@@ -129,6 +129,18 @@ describe('OpenRouterClient', () => {
     expect(calls).toBe(2)
   })
 
+  it('retries when a free model fails upstream with a 500', async () => {
+    let calls = 0
+    const openrouter = await client({
+      '/api/v1/embeddings': () =>
+        ++calls === 1
+          ? json({error: {message: 'HTTP 500: service inference failed'}}, 500)
+          : json({data: [{index: 0, embedding: [1]}]})
+    })
+    expect(await openrouter.embed('m', ['a'])).toEqual([[1]])
+    expect(calls).toBe(2)
+  })
+
   it('does not retry the daily free-model limit, and says when it resets', async () => {
     const openrouter = await client({
       '/api/v1/chat/completions': () =>
