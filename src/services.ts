@@ -7,10 +7,7 @@ import {RateLimiter} from './limits/rateLimit.js'
 import {OpenRouterClient} from './llm/openrouter.js'
 import {createProviders} from './llm/providers.js'
 import type {LlmProvider, ProviderName} from './llm/types.js'
-import type {PipelineDeps} from './rag/pipeline.js'
-import {rewriteBanglish} from './rag/rewrite.js'
 import {keywordSearch} from './retrieval/keyword.js'
-import {Retriever} from './retrieval/retriever.js'
 import type {VectorIndex} from './retrieval/types.js'
 import {MongoConversations, type ConversationDoc} from './store/conversations.js'
 import {openStore, openVectorIndex, resolveVectorBackend, type Store} from './store/mongo.js'
@@ -34,8 +31,6 @@ export interface Services {
   store: Store
   providers: {chat: LlmProvider; embed: LlmProvider}
   vectorIndex: VectorIndex
-  /** The old single-question pipeline; the eval still uses it */
-  pipeline: PipelineDeps
   agent: AgentDeps
   rateLimiter: RateLimiter
   health(): Promise<Health>
@@ -53,35 +48,13 @@ async function reachable(provider: LlmProvider): Promise<boolean> {
   }
 }
 
-/** Connects MongoDB and the model providers, and wires the pipeline the server and eval share */
+/** Connects MongoDB and the model providers, and wires the agent the server and eval share */
 export async function createServices(config: Config): Promise<Services> {
   const store = await openStore(config.mongoUri, config.mongoDb)
   try {
     const backend = await resolveVectorBackend(config.vectorBackend, store.chunks)
     const vectorIndex = await openVectorIndex(store.chunks, backend, config.embedModel)
     const providers = createProviders(config)
-    const retriever = new Retriever({
-      embed: (texts) => providers.embed.embed(config.embedModel, texts),
-      vectorIndex,
-      keyword: (query, k) => keywordSearch(store.chunks, query, k)
-    })
-
-    const pipeline: PipelineDeps = {
-      retrieve: (queries, topK) => retriever.retrieve(queries, topK),
-      rewrite: (question) =>
-        rewriteBanglish(
-          (model, messages, schema) => providers.chat.chatJson(model, messages, schema),
-          config.rewriteModel,
-          question,
-          (error) =>
-            console.warn(
-              `Banglish rewrite skipped: ${error instanceof Error ? error.message : error}`
-            )
-        ),
-      generate: (messages, signal) => providers.chat.chatStream(config.chatModel, messages, signal),
-      topK: config.topK,
-      handoffThreshold: config.handoffThreshold
-    }
 
     const counter = new MongoCounter(store.usage)
     const budget = new Budget(counter, config.budget)
@@ -122,7 +95,6 @@ export async function createServices(config: Config): Promise<Services> {
       store,
       providers,
       vectorIndex,
-      pipeline,
       agent,
       rateLimiter: new RateLimiter(counter, config.rate),
       async health() {

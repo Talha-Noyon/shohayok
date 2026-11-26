@@ -76,7 +76,8 @@ export function scoreHandoff(cases: HandoffCase[], threshold: number): HandoffSc
   return {threshold, precision, recall, f1, handedOff: truePositive + falsePositive}
 }
 
-export const SWEEP = [0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7]
+/** Cosine thresholds to try. The free embedding model scores good matches about 0.3 to 0.6. */
+export const SWEEP = [0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
 
 /** The threshold with the best F1, preferring higher precision on a tie */
 export function bestThreshold(cases: HandoffCase[], thresholds = SWEEP): HandoffScore | null {

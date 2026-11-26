@@ -5,3 +5,5 @@ dist/
 .vercel
 results/*.json
 !results/.gitkeep
+results/*.jsonl
+results/offline.md
