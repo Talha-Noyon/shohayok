@@ -93,17 +93,7 @@ export const CATEGORIES: readonly Category[] = [
     key: 'kids',
     en: 'Kids',
     bn: 'বাচ্চাদের পোশাক',
-    spellings: [
-      'kid',
-      'baby',
-      'bacchader',
-      'bachchader',
-      'children',
-      'child',
-      'বাচ্চাদের',
-      'শিশুদের',
-      'বাচ্চার'
-    ],
+    spellings: ['kid', 'baby', 'baccha', 'bachcha', 'children', 'child', 'বাচ্চা', 'শিশু'],
     sizes: 'age'
   },
   {key: 'lungi', en: 'Lungi', bn: 'লুঙ্গি', spellings: ['lunghi'], sizes: 'free'},
