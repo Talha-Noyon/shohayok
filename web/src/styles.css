@@ -1,0 +1,70 @@
+@import 'tailwindcss';
+
+/*
+ * Colours of Bengal's handloom: undyed muslin, indigo (neel), and the madder and turmeric threads
+ * of kantha embroidery. Madder only ever means cost, turmeric only the confidence threshold.
+ */
+@theme {
+  --font-sans: 'Anek Bangla', 'Noto Sans Bengali', system-ui, sans-serif;
+
+  --color-muslin: #f6f7f4;
+  --color-muslin-deep: #e8ebe6;
+  --color-neel: #1d2856;
+  --color-neel-soft: #5a648c;
+  --color-neel-deep: #151d40;
+  --color-thread: #e9ebf2;
+  --color-madder: #a6302b;
+  --color-madder-light: #e58a7f;
+  --color-turmeric: #e0a526;
+}
+
+@layer base {
+  html {
+    background: var(--color-muslin);
+    color: var(--color-neel);
+    font-variant-numeric: tabular-nums;
+    text-rendering: optimizeLegibility;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-turmeric);
+    outline-offset: 2px;
+  }
+}
+
+/* The kantha running stitch: short dashes of thread with gaps between */
+@layer components {
+  .stitch-y {
+    background-image: linear-gradient(to bottom, currentColor 60%, transparent 0);
+    background-size: 2px 9px;
+    background-repeat: repeat-y;
+    width: 2px;
+  }
+
+  .stitch-x {
+    background-image: linear-gradient(to right, currentColor 60%, transparent 0);
+    background-size: 9px 2px;
+    background-repeat: repeat-x;
+    height: 2px;
+  }
+}
+
+/* One orchestrated moment: the thread stitches itself down when a reply arrives */
+@keyframes stitch-down {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.animate-stitch {
+  animation: stitch-down 900ms steps(12, end) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-stitch {
+    animation: none;
+  }
+}

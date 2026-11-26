@@ -2,3 +2,5 @@
 .env*
 results
 test
+dist
+node_modules
