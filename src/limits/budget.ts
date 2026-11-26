@@ -10,6 +10,8 @@ export interface BudgetConfig {
 }
 
 export interface Quota {
+  /** False for local models: nothing is counted */
+  enabled: boolean
   used: number
   limit: number
   visitorUsed: number
@@ -63,10 +65,11 @@ export class Budget {
     const {key, resetsAt} = this.day()
     if (!this.config.enabled) {
       return {
+        enabled: false,
         used: 0,
-        limit: Infinity,
+        limit: 0,
         visitorUsed: 0,
-        visitorLimit: Infinity,
+        visitorLimit: 0,
         resetsAt: new Date(resetsAt).toISOString()
       }
     }
@@ -75,6 +78,7 @@ export class Budget {
       visitor === undefined ? 0 : this.counter.get(`${key}:${visitor}`)
     ])
     return {
+      enabled: true,
       used,
       limit: this.config.dailyLimit,
       visitorUsed,

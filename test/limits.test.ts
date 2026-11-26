@@ -91,7 +91,7 @@ describe('Budget', () => {
       enabled: false
     })
     expect(await off.take('a')).toBe(true)
-    expect((await off.status('a')).limit).toBe(Infinity)
+    expect(await off.status('a')).toMatchObject({enabled: false, used: 0})
   })
 })
 

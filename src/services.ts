@@ -1,4 +1,9 @@
+import type {AgentDeps, CachedAnswer} from './agent/turn.js'
+import {MongoCache} from './cache/cache.js'
 import type {Config} from './config.js'
+import {Budget, type Quota} from './limits/budget.js'
+import {MongoCounter} from './limits/counter.js'
+import {RateLimiter} from './limits/rateLimit.js'
 import {OpenRouterClient} from './llm/openrouter.js'
 import {createProviders} from './llm/providers.js'
 import type {LlmProvider, ProviderName} from './llm/types.js'
@@ -7,12 +12,17 @@ import {rewriteBanglish} from './rag/rewrite.js'
 import {keywordSearch} from './retrieval/keyword.js'
 import {Retriever} from './retrieval/retriever.js'
 import type {VectorIndex} from './retrieval/types.js'
+import {MongoConversations, type ConversationDoc} from './store/conversations.js'
 import {openStore, openVectorIndex, resolveVectorBackend, type Store} from './store/mongo.js'
+import {MongoShopData} from './store/shopData.js'
 
 export interface Health {
   ok: boolean
   vectorBackend: 'atlas' | 'local'
   chunks: number
+  products: number
+  orders: number
+  quota: Quota
   providers: {chat: ProviderName; embed: ProviderName}
   /** Every provider in use answered */
   providersUp: boolean
@@ -24,7 +34,10 @@ export interface Services {
   store: Store
   providers: {chat: LlmProvider; embed: LlmProvider}
   vectorIndex: VectorIndex
+  /** The old single-question pipeline; the eval still uses it */
   pipeline: PipelineDeps
+  agent: AgentDeps
+  rateLimiter: RateLimiter
   health(): Promise<Health>
   close(): Promise<void>
 }
@@ -70,23 +83,65 @@ export async function createServices(config: Config): Promise<Services> {
       handoffThreshold: config.handoffThreshold
     }
 
+    const counter = new MongoCounter(store.usage)
+    const budget = new Budget(counter, config.budget)
+    const docsOf = (ids: string[]) =>
+      store.chunks
+        .find({docId: {$in: ids}}, {projection: {docId: 1, title: 1, textEn: 1, textBn: 1}})
+        .toArray()
+    const agent: AgentDeps = {
+      conversations: new MongoConversations(store.db.collection<ConversationDoc>('conversations')),
+      shop: new MongoShopData(store),
+      chat: providers.chat,
+      embed: providers.embed,
+      budget,
+      vectorIndex,
+      keyword: (query, k) => keywordSearch(store.chunks, query, k),
+      documents: async (ids) =>
+        (await docsOf(ids)).map(({docId, title, textEn, textBn}) => ({
+          docId,
+          title,
+          textEn,
+          textBn
+        })),
+      titles: async (ids) => new Map((await docsOf(ids)).map((doc) => [doc.docId, doc.title])),
+      embeddings: new MongoCache<number[]>(store.caches as never),
+      answers: new MongoCache<CachedAnswer>(store.caches as never),
+      config: {
+        chatModel: config.chatModel,
+        rewriteModel: config.rewriteModel,
+        embedModel: config.embedModel,
+        topK: config.topK,
+        handoffThreshold: config.handoffThreshold,
+        listLimit: 5
+      }
+    }
+
     return {
       config,
       store,
       providers,
       vectorIndex,
       pipeline,
+      agent,
+      rateLimiter: new RateLimiter(counter, config.rate),
       async health() {
         const inUse = [...new Set([providers.chat, providers.embed])]
-        const [chunks, up] = await Promise.all([
+        const [chunks, products, orders, quota, up] = await Promise.all([
           store.chunks.estimatedDocumentCount(),
+          store.products.estimatedDocumentCount(),
+          store.orders.estimatedDocumentCount(),
+          budget.status(),
           Promise.all(inUse.map(reachable))
         ])
         const providersUp = up.every(Boolean)
         return {
-          ok: chunks > 0 && providersUp,
+          ok: chunks > 0 && products > 0 && providersUp,
           vectorBackend: backend,
           chunks,
+          products,
+          orders,
+          quota,
           providers: {chat: config.chatProvider, embed: config.embedProvider},
           providersUp,
           models: {embed: config.embedModel, chat: config.chatModel, rewrite: config.rewriteModel}

@@ -11,11 +11,15 @@ export async function listen(app: Express): Promise<{url: string; server: Server
   return {url: `http://127.0.0.1:${port}`, server}
 }
 
-export async function postChat(url: string, message: unknown): Promise<Response> {
+export async function postChat(
+  url: string,
+  message: unknown,
+  conversationId?: string
+): Promise<Response> {
   return fetch(`${url}/api/chat`, {
     method: 'POST',
     headers: {'content-type': 'application/json'},
-    body: JSON.stringify({message})
+    body: JSON.stringify({message, conversationId})
   })
 }
 

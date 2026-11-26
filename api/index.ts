@@ -1,29 +1,21 @@
-/**
- * The Vercel entry point. Vercel runs this file as one serverless function and serves `public/`
- * from its CDN; `vercel.json` sends every `/api/*` request here, and Express routes it.
- */
 import {setup} from '../src/config.js'
-import {answerQuestion} from '../src/rag/pipeline.js'
 import {createApp} from '../src/server/app.js'
+import {appDeps} from '../src/server/deps.js'
 import {createServices, type Services} from '../src/services.js'
 
-// One set of connections per warm instance, opened by the first request. A failed start is
-// forgotten, so the next request tries again instead of failing forever.
+/**
+ * The whole API as one Vercel function. Services connect on the first request and stay up while
+ * the instance is warm; a failed connection is retried on the next request.
+ */
+const config = setup()
 let services: Promise<Services> | undefined
 
-function getServices(): Promise<Services> {
-  services ??= createServices(setup()).catch((error: unknown) => {
+function load(): Promise<Services> {
+  services ??= createServices(config).catch((error: unknown) => {
     services = undefined
     throw error
   })
   return services
 }
 
-const app = createApp({
-  answer: async function* (question, signal) {
-    yield* answerQuestion(question, (await getServices()).pipeline, signal)
-  },
-  health: async () => (await getServices()).health()
-})
-
-export default app
+export default createApp(appDeps(load, config))

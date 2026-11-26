@@ -3,14 +3,14 @@ import type {Server} from 'node:http'
 import {MongoClient} from 'mongodb'
 import {afterAll, beforeAll, describe, expect, it} from 'vitest'
 
-import type {Config} from '../src/config.js'
+import {loadConfig} from '../src/config.js'
 import {policyChunk, productChunk} from '../src/ingest/chunk.js'
 import {ingestShop} from '../src/ingest/ingest.js'
 import type {ProviderName} from '../src/llm/types.js'
-import {answerQuestion} from '../src/rag/pipeline.js'
 import {keywordSearch} from '../src/retrieval/keyword.js'
 import {Retriever} from '../src/retrieval/retriever.js'
 import {createApp} from '../src/server/app.js'
+import {appDeps} from '../src/server/deps.js'
 import {createServices, type Services} from '../src/services.js'
 import {loadOrders, loadPolicies, loadProducts} from '../src/shop/schema.js'
 import {MongoCache} from '../src/cache/cache.js'
@@ -231,7 +231,7 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
           ]
         })
       },
-      config: (url: string): Partial<Config> => ({ollamaUrl: url})
+      env: (url: string): Record<string, string> => ({OLLAMA_URL: url})
     },
     openrouter: {
       chatPath: '/api/v1/chat/completions',
@@ -241,9 +241,9 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
           json({data: embedAll(body).map((embedding, index) => ({embedding, index}))}),
         '/api/v1/chat/completions': () => ({pieces: sse(...answer)})
       },
-      config: (url: string): Partial<Config> => ({
-        openRouterKey: 'test-key',
-        openRouterUrl: `${url}/api/v1`
+      env: (url: string): Record<string, string> => ({
+        OPENROUTER_API_KEY: 'test-key',
+        OPENROUTER_URL: `${url}/api/v1`
       })
     }
   }
@@ -260,29 +260,20 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
 
       beforeAll(async () => {
         fake = await startFakeServer(provider.handlers)
-        services = await createServices({
-          mongoUri: MONGO_URI,
-          mongoDb: DB,
-          dnsServers: [],
-          chatProvider: name,
-          embedProvider: name,
-          ollamaUrl: 'http://127.0.0.1:9',
-          openRouterKey: undefined,
-          openRouterUrl: 'http://127.0.0.1:9',
-          embedModel: 'hash-test',
-          chatModel: 'chat-test',
-          rewriteModel: 'chat-test',
-          vectorBackend: 'local',
-          handoffThreshold: 0.1,
-          topK: 4,
-          port: 0,
-          ...provider.config(fake.url)
+        const config = loadConfig({
+          MONGODB_URI: MONGO_URI,
+          MONGODB_DB: DB,
+          LLM_PROVIDER: name,
+          EMBED_MODEL: 'hash-test',
+          CHAT_MODEL: 'chat-test',
+          VECTOR_BACKEND: 'local',
+          HANDOFF_THRESHOLD: '0.1',
+          ...provider.env(fake.url)
         })
-        const app = createApp({
-          answer: (question, signal) => answerQuestion(question, services.pipeline, signal),
-          health: () => services.health()
-        })
-        ;({url, server} = await listen(app))
+        services = await createServices(config)
+        // Each provider answers for itself, not from the answers the last one cached
+        await services.store.caches.deleteMany({})
+        ;({url, server} = await listen(createApp(appDeps(async () => services, config))))
       })
 
       afterAll(async () => {
@@ -295,24 +286,45 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
         const events = await readEvents(await postChat(url, 'আপনাদের শোরুম কখন খোলা থাকে?'))
 
         const meta = events[0] as {type: string; lang: string; sources: {docId: string}[]}
-        expect(meta).toMatchObject({type: 'meta', lang: 'bn', handoff: false})
+        expect(meta).toMatchObject({type: 'meta', lang: 'bn', route: {kind: 'answer'}})
         expect(meta.sources[0]?.docId).toBe('F11')
-        expect(events.at(-1)).toMatchObject({type: 'done', answer: answer.join('')})
+        expect(events.at(-1)).toMatchObject({
+          type: 'done',
+          answer: answer.join(''),
+          trace: {decision: 'answer'}
+        })
 
         const chat = fake.requests.find((request) => request.path === provider.chatPath)
         const system = (chat?.body as {messages: {content: string}[]}).messages[0]?.content
-        expect(system).toContain('[F11] Showroom and opening hours')
+        expect(system).toContain('[F11] শোরুম ও খোলার সময়')
         expect(system).toContain('Reply in Bangla, written in Bengali script.')
       })
 
-      it('reports health', async () => {
+      it('keeps a conversation going over HTTP and reads it back', async () => {
+        const first = await readEvents(await postChat(url, 'Sylhet e delivery charge koto?'))
+        const id = String(first[0]?.conversationId)
+        const second = await readEvents(await postChat(url, 'ar Chittagong e?', id))
+        const text = second
+          .filter((event) => event.type === 'token')
+          .map((event) => event.text)
+          .join('')
+        expect(text).toContain('Chattogram e delivery charge 130 taka')
+        const saved = await (await fetch(`${url}/api/conversations/${id}`)).json()
+        expect(saved.messages).toHaveLength(4)
+      })
+
+      it('reports health and the quota', async () => {
         expect(await (await fetch(`${url}/api/health`)).json()).toMatchObject({
           ok: true,
           vectorBackend: 'local',
           chunks: CHUNK_COUNT,
+          products: 500,
+          orders: 300,
           providers: {chat: name, embed: name},
           providersUp: true
         })
+        const quota = await (await fetch(`${url}/api/quota`)).json()
+        expect(quota.enabled).toBe(name === 'openrouter')
       })
     })
   }
