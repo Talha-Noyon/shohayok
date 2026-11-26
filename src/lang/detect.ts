@@ -5,10 +5,12 @@ const LATIN_CHAR = /[A-Za-z]/g
 
 // Common Bengali words as people type them in Latin letters. Product names are left out on
 // purpose, because "nakshi kantha" or "panjabi" also appear in English questions. Words that are
-// also everyday English ("age", "tin", "char", "pore") are left out too.
+// also everyday English ("age", "tin", "char", "pore") are left out too. Particles such as "e"
+// (in, to) and "r" (of) are in: "Sylhet e delivery koto?" is Banglish.
 const BANGLISH_WORDS = new Set(
   (
     'ami amar amake amra amader apni apnar apnake apnara apnader tumi tomar tomake tomra tader ' +
+    'e te ar na ta tar r ' +
     'ki keno kemon koto kotodin koyta kobe kothay kokhon kivabe kibhabe ke kar ' +
     'ache achhe ase nai nei hobe hoy hoye hoyeche hocche hoise ' +
     'korbo korte kore koren korun kora korechi korsi chai chacchi lagbe lage ' +
@@ -33,13 +35,36 @@ const BANGLISH_SHARE = 0.3
  * text, Banglish needs either two words from the list above or a third of all words.
  */
 export function detectLanguage(text: string): Lang {
+  return explainLanguage(text).lang
+}
+
+export interface LanguageEvidence {
+  lang: Lang
+  /** Share of letters in Bengali script, from 0 to 1 */
+  bengaliShare: number
+  /** The Banglish words found, in order */
+  banglishWords: string[]
+}
+
+/** The language, and why: what the inspector shows */
+export function explainLanguage(text: string): LanguageEvidence {
   const bengali = text.match(BENGALI_CHAR)?.length ?? 0
   const latin = text.match(LATIN_CHAR)?.length ?? 0
-  if (bengali > 0 && bengali / (bengali + latin) >= BENGALI_SHARE) return 'bn'
-
+  const bengaliShare = bengali + latin > 0 ? bengali / (bengali + latin) : 0
   const words = text.toLowerCase().match(/[a-z]+/g) ?? []
-  if (words.length === 0) return 'en'
-  const hits = words.filter((word) => BANGLISH_WORDS.has(word)).length
-  if (hits >= 2 || hits / words.length >= BANGLISH_SHARE) return 'banglish'
-  return 'en'
+  const banglishWords = words.filter((word) => BANGLISH_WORDS.has(word))
+  const evidence = (lang: Lang): LanguageEvidence => ({lang, bengaliShare, banglishWords})
+
+  if (bengali > 0 && bengaliShare >= BENGALI_SHARE) return evidence('bn')
+  if (words.length === 0) return evidence('en')
+  const hits = banglishWords.length
+  if (hits >= 2 || hits / words.length >= BANGLISH_SHARE) return evidence('banglish')
+  return evidence('en')
 }
+
+/** A phone number alone says nothing about the customer's language */
+export function hasLetters(text: string): boolean {
+  return BENGALI_LETTER.test(text) || /[A-Za-z]/.test(text)
+}
+
+const BENGALI_LETTER = /[অ-হ]/

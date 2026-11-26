@@ -44,6 +44,14 @@ const ALL: ToolResult[] = [
   {tool: 'product_info', product},
   {tool: 'request_callback', outcome: 'saved', ticket: 'CB-ABC234', phone: '01000000009'},
   {tool: 'request_callback', outcome: 'missing'},
+  {tool: 'handoff'},
+  {tool: 'quota', hits: [], resetsAt: '2026-11-27T00:00:00.000Z'},
+  {
+    tool: 'quota',
+    hits: [{docId: 'F05', title: 'Returns and refunds / রিটার্ন ও রিফান্ড'}],
+    resetsAt: '2026-11-27T00:00:00.000Z'
+  },
+  {tool: 'clarify'},
   {tool: 'smalltalk', kind: 'greeting'},
   {tool: 'smalltalk', kind: 'thanks'}
 ]

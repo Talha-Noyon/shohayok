@@ -40,6 +40,15 @@ export type ToolName =
   | 'request_callback'
   | 'smalltalk'
   | 'clarify'
+  | 'handoff'
+  | 'quota'
+
+/** A search result named in a reply */
+export interface DocTitle {
+  docId: string
+  /** "English / বাংলা", as chunks store it */
+  title: string
+}
 
 export type ToolResult =
   | {tool: 'order_status'; outcome: 'found'; order: Order}
@@ -66,3 +75,7 @@ export type ToolResult =
   | {tool: 'request_callback'; outcome: 'missing'}
   | {tool: 'smalltalk'; kind: 'greeting' | 'thanks'}
   | {tool: 'clarify'}
+  /** Nothing relevant was found: offer a callback instead of guessing */
+  | {tool: 'handoff'}
+  /** Today's free model requests are spent: what keyword search found, and when they return */
+  | {tool: 'quota'; hits: DocTitle[]; resetsAt: string}

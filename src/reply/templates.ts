@@ -13,7 +13,7 @@ import {
 } from '../shop/format.js'
 import {placeOf} from '../shop/places.js'
 import type {Order, OrderStatus, Payment, Product, Variant} from '../shop/schema.js'
-import type {ToolResult} from '../tools/types.js'
+import type {DocTitle, ToolResult} from '../tools/types.js'
 
 export interface Reply {
   text: string
@@ -53,6 +53,18 @@ function build(result: ToolResult, lang: Lang): Reply {
       return {text: callbackText(result, lang), sources: []}
     case 'smalltalk':
       return {text: smalltalkText(result.kind, lang), sources: []}
+    case 'handoff':
+      return {
+        text: pick(lang, {
+          en: "I'm not sure about that, and I'd rather not guess. Our team can call you: which phone number should they call?",
+          bn: 'এ বিষয়ে আমি নিশ্চিত নই, আন্দাজে বলতে চাই না। আমাদের টিম আপনাকে ফোন করতে পারে। কোন নম্বরে ফোন করবে?',
+          banglish:
+            'Ei bishoye ami nishchit na, andaje bolte chai na. Amader team apnake phone korte pare. Kon number e phone korbe?'
+        }),
+        sources: []
+      }
+    case 'quota':
+      return quotaText(result.hits, lang)
     case 'clarify':
       return {
         text: pick(lang, {
@@ -398,6 +410,33 @@ function productText(product: Product, lang: Lang): string {
     bn: `${name}-এর দাম ${price}। রং: ${colors}। সাইজ: ${sizes}। [${product.id}]`,
     banglish: `${name} er dam ${price}. Rong: ${colors}. Size: ${sizes}. [${product.id}]`
   })
+}
+
+// The daily limit
+
+/** "English / বাংলা" as stored on chunks: one side per language */
+export function titleIn(title: string, lang: Lang): string {
+  const [en, bn] = title.split(' / ')
+  return (lang === 'bn' ? bn : en) ?? title
+}
+
+function quotaText(hits: DocTitle[], lang: Lang): Reply {
+  const head = pick(lang, {
+    en: "Today's free answers are used up, so I can't write one now. They come back at 6 am Dhaka time. Questions about orders, delivery and stock still work.",
+    bn: 'আজকের ফ্রি উত্তর শেষ, তাই এখন লিখে উত্তর দিতে পারছি না। ঢাকার সময় সকাল ৬টায় আবার চালু হবে। অর্ডার, ডেলিভারি আর স্টকের প্রশ্নের উত্তর এখনো পাবেন।',
+    banglish:
+      'Aajker free uttor shesh, tai ekhon likhe uttor dite parchi na. Dhakar shomoy shokal 6 tay abar chalu hobe. Order, delivery ar stock er proshner uttor ekhono paben.'
+  })
+  if (hits.length === 0) return {text: head, sources: []}
+  const intro = pick(lang, {
+    en: 'These pages may help:',
+    bn: 'এগুলো কাজে লাগতে পারে:',
+    banglish: 'Egulo kaje lagte pare:'
+  })
+  const rows = hits.map(
+    (hit, i) => `${amount(i + 1, lang)}. ${titleIn(hit.title, lang)} [${hit.docId}]`
+  )
+  return {text: [head, intro, ...rows].join('\n'), sources: hits.map((hit) => hit.docId)}
 }
 
 // Callbacks and small talk
