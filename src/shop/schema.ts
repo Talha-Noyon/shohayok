@@ -82,6 +82,15 @@ export const OrderSchema = z.object({
 })
 export type Order = z.infer<typeof OrderSchema>
 
+export const PolicySchema = z.object({
+  id: z.string().regex(/^F\d{2}$/, 'policy ids look like F01'),
+  type: z.literal('policy'),
+  title: BilingualSchema,
+  body: BilingualSchema,
+  tags: z.array(z.string()).default([])
+})
+export type Policy = z.infer<typeof PolicySchema>
+
 async function readJson(name: string, dir: URL): Promise<unknown> {
   return JSON.parse(await readFile(new URL(name, dir), 'utf8'))
 }
@@ -92,4 +101,8 @@ export async function loadProducts(dir: URL = DATA_DIR): Promise<Product[]> {
 
 export async function loadOrders(dir: URL = DATA_DIR): Promise<Order[]> {
   return z.array(OrderSchema).parse(await readJson('orders.json', dir))
+}
+
+export async function loadPolicies(dir: URL = DATA_DIR): Promise<Policy[]> {
+  return z.array(PolicySchema).parse(await readJson('policies.json', dir))
 }

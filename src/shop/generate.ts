@@ -1,4 +1,5 @@
 import {deliveryFee} from './delivery.js'
+import {listWords} from './format.js'
 import {PLACES, placeOf, type Zone} from './places.js'
 import {createRandom, type Random} from './random.js'
 import type {Bilingual, Order, OrderItem, OrderStatus, Payment, Product} from './schema.js'
@@ -305,21 +306,16 @@ function productName(collection: Term, category: Category, style: Style): Biling
 function occasionLine(category: CategoryKey, keys: string[]): Phrase {
   if (category === 'gamcha') return {en: 'For everyday use.', bn: 'প্রতিদিনের ব্যবহারের জন্য।'}
   const occasions = keys.map((key) => OCCASIONS.find((occasion) => occasion.key === key))
-  const en = joinWords(
+  const en = listWords(
     occasions.map((occasion) => occasion?.en ?? ''),
-    'and'
+    'en'
   )
   if (category === 'shawl') return {en: `Made for ${en}.`, bn: 'শীতে গায়ে জড়ানোর মতো।'}
-  const bn = joinWords(
+  const bn = listWords(
     occasions.map((occasion) => occasion?.bnAt ?? ''),
-    'ও'
+    'bn'
   )
   return {en: `Made for ${en}.`, bn: `${bn} পরার মতো।`}
-}
-
-export function joinWords(words: string[], and: string): string {
-  if (words.length <= 1) return words[0] ?? ''
-  return `${words.slice(0, -1).join(', ')} ${and} ${words.at(-1)}`
 }
 
 function capitalize(text: string): string {

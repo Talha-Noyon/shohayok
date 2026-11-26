@@ -1,92 +1,120 @@
-import type {SourceDoc} from '../corpus/schema.js'
-import {toBengaliDigits} from '../lang/digits.js'
+import {colorName, money, sizeLabel} from '../shop/format.js'
+import type {Policy, Product} from '../shop/schema.js'
+import {
+  CATEGORIES,
+  categoryOf,
+  COLLECTIONS,
+  COLORS,
+  styleOf,
+  termOf,
+  type Term
+} from '../shop/vocab.js'
+
+/** What vector and keyword search can narrow a search by */
+export interface ChunkFilters {
+  type: 'product' | 'policy'
+  category?: string
+  colors?: string[]
+  price?: number
+}
 
 export interface Chunk {
   /** `<docId>#<n>` */
   id: string
   docId: string
-  type: SourceDoc['type']
-  /** Both titles, for display */
+  type: ChunkFilters['type']
+  /** Both names, for display */
   title: string
-  /** What gets embedded and keyword-indexed: the header, then part of the body */
+  /** What gets embedded and keyword-indexed: both languages and the spellings customers type */
   text: string
+  /** What the answer prompt sees for English and Banglish questions */
+  textEn: string
+  /** What the answer prompt sees for Bangla questions */
+  textBn: string
+  filters: ChunkFilters
 }
 
-export const MAX_CHUNK_CHARS = 900
+/** Every product and policy fits in one chunk of this size; a test checks the data */
+export const MAX_CHUNK_CHARS = 1500
 
-/**
- * Every chunk starts with the document's titles, price and tags in both languages, so a chunk
- * cut from the middle of a long body still says what it is about.
- */
-export function chunkHeader(doc: SourceDoc): string {
-  const lines = [`${doc.title.en} / ${doc.title.bn}`]
-  if (doc.price !== undefined) {
-    lines.push(`Price: Tk ${doc.price} / দাম: ${toBengaliDigits(String(doc.price))} টাকা`)
-  }
-  if (doc.tags.length > 0) lines.push(`Tags: ${doc.tags.join(', ')}`)
-  return lines.join('\n')
-}
+const LATIN = /^[a-z0-9 -]+$/
 
-/** English paragraphs first, then Bangla ones, packed greedily into chunks under `maxChars` */
-export function toChunks(doc: SourceDoc, maxChars = MAX_CHUNK_CHARS): Chunk[] {
-  const header = chunkHeader(doc)
-  const budget = Math.max(maxChars - header.length - 1, 100)
-  const pieces = [...paragraphs(doc.body.en), ...paragraphs(doc.body.bn)].flatMap((paragraph) =>
-    splitLong(paragraph, budget)
-  )
-
-  const bodies: string[] = []
-  let current = ''
-  for (const piece of pieces) {
-    const joined = current ? `${current}\n${piece}` : piece
-    if (joined.length > budget && current) {
-      bodies.push(current)
-      current = piece
-    } else {
-      current = joined
-    }
-  }
-  if (current) bodies.push(current)
-
-  const title = `${doc.title.en} / ${doc.title.bn}`
-  return bodies.map((body, n) => ({
-    id: `${doc.id}#${n}`,
-    docId: doc.id,
-    type: doc.type,
-    title,
-    text: `${header}\n${body}`
-  }))
-}
-
-function paragraphs(text: string): string[] {
-  return text
-    .split(/\n+/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean)
+/** Latin spellings of the product's words, so keyword search finds "jamdhani sharee" too */
+function spellingsOf(terms: Term[]): string[] {
+  const all = terms.flatMap((term) => term.spellings).filter((spelling) => LATIN.test(spelling))
+  return [...new Set(all)]
 }
 
 /**
- * Splits a paragraph that is over budget at sentence ends, including the Bengali full stop "।",
- * and cuts any single sentence that is still too long.
+ * One product, one chunk. Stock is left out on purpose: it changes every day, the text is
+ * embedded once, and the stock tool reads it live.
  */
-export function splitLong(paragraph: string, budget: number): string[] {
-  if (paragraph.length <= budget) return [paragraph]
-  const sentences = paragraph.match(/[^.!?।]+[.!?।]*\s*/g) ?? [paragraph]
-  const out: string[] = []
-  let current = ''
-  for (const sentence of sentences) {
-    if (current && (current + sentence).length > budget) {
-      out.push(current.trim())
-      current = ''
+export function productChunk(product: Product): Chunk {
+  const category = categoryOf(product.category)
+  const style = styleOf(product.style)
+  // A kids' panjabi is found by the words for panjabi
+  const styleTerm =
+    style.matchable === false ? (CATEGORIES.find((item) => item.en === style.en) ?? style) : style
+  const colors = product.colors.map((key) => termOf(COLORS, key))
+
+  const textEn = [
+    product.name.en,
+    `${category.en} · ${style.en}`,
+    `Price: ${money(product.price, 'en')}`,
+    `Colours: ${product.colors.map((key) => colorName(key, 'en')).join(', ')}`,
+    `Sizes: ${product.sizes.map((size) => sizeLabel(size, 'en')).join(', ')}`,
+    `Fabric: ${product.fabric.en}`,
+    product.description.en,
+    `Care: ${product.care.en}`
+  ].join('\n')
+
+  const textBn = [
+    product.name.bn,
+    `${category.bn} · ${style.bn}`,
+    `দাম: ${money(product.price, 'bn')}`,
+    `রং: ${product.colors.map((key) => colorName(key, 'bn')).join(', ')}`,
+    `সাইজ: ${product.sizes.map((size) => sizeLabel(size, 'bn')).join(', ')}`,
+    `কাপড়: ${product.fabric.bn}`,
+    product.description.bn,
+    `যত্ন: ${product.care.bn}`
+  ].join('\n')
+
+  const spellings = spellingsOf([
+    termOf(COLLECTIONS, product.collection),
+    styleTerm,
+    category,
+    ...colors
+  ])
+
+  return {
+    id: `${product.id}#0`,
+    docId: product.id,
+    type: 'product',
+    title: `${product.name.en} / ${product.name.bn}`,
+    text: [textEn, textBn, `Also written: ${spellings.join(', ')}`].join('\n'),
+    textEn,
+    textBn,
+    filters: {
+      type: 'product',
+      category: product.category,
+      colors: product.colors,
+      price: product.price
     }
-    if (sentence.length > budget) {
-      for (let start = 0; start < sentence.length; start += budget) {
-        out.push(sentence.slice(start, start + budget).trim())
-      }
-      continue
-    }
-    current += sentence
   }
-  if (current.trim()) out.push(current.trim())
-  return out
+}
+
+export function policyChunk(policy: Policy): Chunk {
+  const textEn = `${policy.title.en}\n${policy.body.en}`
+  const textBn = `${policy.title.bn}\n${policy.body.bn}`
+  const tags = policy.tags.length > 0 ? [`Tags: ${policy.tags.join(', ')}`] : []
+  return {
+    id: `${policy.id}#0`,
+    docId: policy.id,
+    type: 'policy',
+    title: `${policy.title.en} / ${policy.title.bn}`,
+    text: [textEn, textBn, ...tags].join('\n'),
+    textEn,
+    textBn,
+    filters: {type: 'policy'}
+  }
 }

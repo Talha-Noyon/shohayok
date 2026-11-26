@@ -1,12 +1,12 @@
 import {parseArgs} from 'node:util'
 
 import {setup} from '../config.js'
-import {loadDocs} from '../corpus/schema.js'
-import {toChunks} from '../ingest/chunk.js'
+import {policyChunk, productChunk} from '../ingest/chunk.js'
 import {OllamaClient} from '../llm/ollama.js'
 import {createProvider, hasModel, PROVIDER_LABEL} from '../llm/providers.js'
 import {ensureVectorSearchIndex} from '../retrieval/atlasIndex.js'
 import {ensureTextIndex, openStore, resolveVectorBackend, upsertChunks} from '../store/mongo.js'
+import {loadPolicies, loadProducts} from '../shop/schema.js'
 import {msSince} from '../util/time.js'
 import {runCli} from './run.js'
 
@@ -17,9 +17,11 @@ await runCli(async () => {
   const {values} = parseArgs({options: {pull: {type: 'boolean', default: false}}})
   const config = setup()
 
-  const docs = await loadDocs()
-  const chunks = docs.flatMap((doc) => toChunks(doc))
-  console.log(`${docs.length} documents in ${chunks.length} chunks`)
+  const chunks = [
+    ...(await loadProducts()).map(productChunk),
+    ...(await loadPolicies()).map(policyChunk)
+  ]
+  console.log(`${chunks.length} chunks`)
 
   const provider = createProvider(config.embedProvider, config)
   const model = config.embedModel

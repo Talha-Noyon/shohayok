@@ -3,7 +3,7 @@ import {cpus} from 'node:os'
 import {parseArgs} from 'node:util'
 
 import {setup} from '../config.js'
-import {loadEvalSet} from '../corpus/schema.js'
+import {loadEvalSet} from '../eval/cases.js'
 import {factsFound, firstRelevantRank} from '../eval/metrics.js'
 import {renderMarkdown, replaceResultsSection, summarize, type ItemResult} from '../eval/report.js'
 import {detectLanguage} from '../lang/detect.js'

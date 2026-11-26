@@ -4,14 +4,14 @@ import {MongoClient} from 'mongodb'
 import {afterAll, beforeAll, describe, expect, it} from 'vitest'
 
 import type {Config} from '../src/config.js'
-import {loadDocs} from '../src/corpus/schema.js'
-import {toChunks} from '../src/ingest/chunk.js'
+import {policyChunk, productChunk} from '../src/ingest/chunk.js'
 import type {ProviderName} from '../src/llm/types.js'
 import {answerQuestion} from '../src/rag/pipeline.js'
 import {keywordSearch} from '../src/retrieval/keyword.js'
 import {Retriever} from '../src/retrieval/retriever.js'
 import {createApp} from '../src/server/app.js'
 import {createServices, type Services} from '../src/services.js'
+import {loadPolicies, loadProducts} from '../src/shop/schema.js'
 import {
   ensureTextIndex,
   openStore,
@@ -39,13 +39,18 @@ async function mongoReachable(): Promise<boolean> {
 }
 
 const reachable = await mongoReachable()
+const allChunks = async () => [
+  ...(await loadProducts()).map(productChunk),
+  ...(await loadPolicies()).map(policyChunk)
+]
+const CHUNK_COUNT = 515
 
 describe.skipIf(!reachable)('with a real MongoDB', () => {
   let store: Store
 
   beforeAll(async () => {
     store = await openStore(MONGO_URI, DB)
-    const chunks = (await loadDocs()).flatMap((doc) => toChunks(doc))
+    const chunks = await allChunks()
     const rows = chunks.map((chunk) => ({chunk, embedding: hashEmbed(chunk.text)}))
     await upsertChunks(store.chunks, rows, 'hash-test')
     await ensureTextIndex(store.chunks)
@@ -57,28 +62,26 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
   })
 
   it('stores every chunk once and removes chunks that left the data', async () => {
-    expect(await store.chunks.countDocuments()).toBe(35)
-    const [first] = await store.chunks.find().limit(1).toArray()
-    if (!first) throw new Error('no chunk stored')
+    expect(await store.chunks.countDocuments()).toBe(CHUNK_COUNT)
+    const [first] = await allChunks()
+    if (!first) throw new Error('no chunk in the data')
     const result = await upsertChunks(
       store.chunks,
-      [{chunk: {...first, id: first._id}, embedding: first.embedding}],
+      [{chunk: first, embedding: hashEmbed(first.text)}],
       'hash-test'
     )
-    expect(result).toEqual({written: 1, removed: 34})
+    expect(result).toEqual({written: 1, removed: CHUNK_COUNT - 1})
     await upsertChunks(
       store.chunks,
-      (await loadDocs())
-        .flatMap((doc) => toChunks(doc))
-        .map((chunk) => ({chunk, embedding: hashEmbed(chunk.text)})),
+      (await allChunks()).map((chunk) => ({chunk, embedding: hashEmbed(chunk.text)})),
       'hash-test'
     )
-    expect(await store.chunks.countDocuments()).toBe(35)
+    expect(await store.chunks.countDocuments()).toBe(CHUNK_COUNT)
   })
 
   it('finds Bengali words through the $text index', async () => {
-    const hits = await keywordSearch(store.chunks, 'জামদানি শাড়ির দাম কত?', 3)
-    expect(hits[0]?.docId).toBe('P02')
+    const hits = await keywordSearch(store.chunks, 'কেতকী জামদানি শাড়ির দাম কত?', 3)
+    expect(hits[0]?.docId).toBe('P001')
   })
 
   it('retrieves a Banglish question by vector and keyword together', async () => {
@@ -87,8 +90,8 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
       vectorIndex: await openVectorIndex(store.chunks, 'local', 'hash-test'),
       keyword: (query, k) => keywordSearch(store.chunks, query, k)
     })
-    const {hits, confidence} = await retriever.retrieve(['tangail sharee er dam koto?'], 4)
-    expect(hits[0]?.docId).toBe('P01')
+    const {hits, confidence} = await retriever.retrieve(['ketoki jamdhani saree er dam koto?'], 4)
+    expect(hits[0]?.docId).toBe('P001')
     expect(confidence).toBeGreaterThan(0)
   })
 
@@ -98,7 +101,7 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
     )
   })
 
-  const answer = ['জামদানি শাড়ির দাম ৮৫০০ টাকা। ', '[P02]']
+  const answer = ['শোরুম প্রতিদিন সকাল ১০টা থেকে রাত ৯টা পর্যন্ত খোলা। ', '[F11]']
   const embedAll = (body: unknown) =>
     (body as {input: string[]}).input.map((text) => hashEmbed(text))
 
@@ -176,16 +179,16 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
       })
 
       it('answers a Bangla question end to end and cites the right document', async () => {
-        const events = await readEvents(await postChat(url, 'জামদানি শাড়ির দাম কত?'))
+        const events = await readEvents(await postChat(url, 'আপনাদের শোরুম কখন খোলা থাকে?'))
 
         const meta = events[0] as {type: string; lang: string; sources: {docId: string}[]}
         expect(meta).toMatchObject({type: 'meta', lang: 'bn', handoff: false})
-        expect(meta.sources[0]?.docId).toBe('P02')
+        expect(meta.sources[0]?.docId).toBe('F11')
         expect(events.at(-1)).toMatchObject({type: 'done', answer: answer.join('')})
 
         const chat = fake.requests.find((request) => request.path === provider.chatPath)
         const system = (chat?.body as {messages: {content: string}[]}).messages[0]?.content
-        expect(system).toContain('[P02] Dhakai Jamdani saree')
+        expect(system).toContain('[F11] Showroom and opening hours')
         expect(system).toContain('Reply in Bangla, written in Bengali script.')
       })
 
@@ -193,7 +196,7 @@ describe.skipIf(!reachable)('with a real MongoDB', () => {
         expect(await (await fetch(`${url}/api/health`)).json()).toMatchObject({
           ok: true,
           vectorBackend: 'local',
-          chunks: 35,
+          chunks: CHUNK_COUNT,
           providers: {chat: name, embed: name},
           providersUp: true
         })
