@@ -389,12 +389,17 @@ function listText(result: Extract<ToolResult, {tool: 'list_products'}>, lang: La
     (item, i) =>
       `${amount(i + 1, lang)}. ${nameOf(item, lang)}, ${money(item.price, lang)} [${item.id}]`
   )
-  const tail = pick(lang, {
-    en: 'Ask about any of them by number, like "the second one".',
-    bn: 'নম্বর দিয়ে জিজ্ঞেস করতে পারেন, যেমন "দ্বিতীয়টার দাম কত?"',
-    banglish: 'Number diye jiggesh korte paren, jemon "2nd tar dam koto?"'
-  })
-  return {text: [head, ...rows, tail].join('\n'), sources: items.map((item) => item.id)}
+  const tail =
+    shown > 1
+      ? [
+          pick(lang, {
+            en: 'Ask about any of them by number, like "the second one".',
+            bn: 'নম্বর দিয়ে জিজ্ঞেস করতে পারেন, যেমন "দ্বিতীয়টার দাম কত?"',
+            banglish: 'Number diye jiggesh korte paren, jemon "2nd tar dam koto?"'
+          })
+        ]
+      : []
+  return {text: [head, ...rows, ...tail].join('\n'), sources: items.map((item) => item.id)}
 }
 
 function productText(product: Product, lang: Lang): string {

@@ -30,7 +30,7 @@ export interface Source {
   title: string
 }
 
-/** What the rules read in the message. Places are keys, and the phone is masked. */
+/** What the rules read in the message. Places are English names, and the phone is masked. */
 export interface TraceEntities {
   orderId?: string
   phone?: string

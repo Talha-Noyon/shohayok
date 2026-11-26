@@ -116,6 +116,14 @@ describe('renderReply', () => {
     expect(reply.sources).toEqual(list.items.map((item) => item.id))
   })
 
+  it('suggests asking by number only when it listed more than one product', () => {
+    const one = {...list, items: list.items.slice(0, 1), total: 1}
+    for (const lang of LANGS) {
+      expect(renderReply(one, lang).text).not.toMatch(/2nd|second|দ্বিতীয়/)
+      expect(renderReply(list, lang).text).toMatch(/2nd|second|দ্বিতীয়/)
+    }
+  })
+
   it('masks the phone number when it confirms a callback', () => {
     const reply = renderReply(
       {tool: 'request_callback', outcome: 'saved', ticket: 'CB-ABC234', phone: '01000000009'},
